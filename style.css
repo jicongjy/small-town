@@ -172,3 +172,7 @@ input[type='text'] {
 .goal img.gs { width: 10px; height: 12px; flex: none; }
 img.mapc { width: 48px; height: auto; }
 .postcard p { padding-right: 40px; }
+img.roadc { width: 24px; height: auto; flex: none; }
+.memo.road { background: #e9f3ea; border-left-color: #3f8f4f; }
+.memo.road p { margin: 0 0 4px; }
+.memo.coach { background: #fff3c4; border: 2px solid var(--line); border-left: 4px solid var(--gold); margin-bottom: 8px; }

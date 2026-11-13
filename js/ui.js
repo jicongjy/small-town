@@ -116,7 +116,13 @@
 
   function vIntro() {
     var q = Q;
-    var h = '<div class="panel"><div class="row" style="gap:12px">' + portrait(q) +
+    var h = '';
+    if (q.road) {
+      h += '<div class="memo road"><div class="row" style="gap:8px;margin-bottom:4px">' + img('hero', null, null, 'roadc') + img('donkey', null, null, 'roadc') + '<b style="display:inline">길 위에서</b></div>';
+      q.road.forEach(function (l) { h += '<p>' + esc(l) + '</p>'; });
+      h += '</div>';
+    }
+    h += '<div class="panel"><div class="row" style="gap:12px">' + portrait(q) +
       '<div><div class="muted">' + esc(q.who) + '</div><h2>' + esc(q.title) + '</h2></div></div><div class="gap"></div>';
     q.intro.forEach(function (l) { h += '<p class="say">' + esc(l) + '</p>'; });
     h += '</div><div class="panel"><h2>의뢰 조건</h2><div class="gap" style="height:6px"></div>' + goalsHtml(q, null) +
@@ -203,12 +209,32 @@
     return i % 2 ? 'pine' : 'tree';
   }
 
+  // 첫 의뢰를 깨기 전에는 할머니가 한 수씩 알려 준다
+  function coach(s, done) {
+    if (Q.id !== 'q1' || (save.stars.q1 || 0) > 0) return '';
+    var fields = 0, i;
+    for (i = 0; i < 25; i++) if (s.board[i] && s.board[i].id === 'field') fields++;
+    var hasBakery = s.hand.indexOf('bakery') >= 0, hasField = s.hand.indexOf('field') >= 0;
+    var t;
+    if (done) t = '다 놓았으면 의뢰인에게 보여 줘라. 조건을 못 채웠어도 괜찮다. 다시 지으면 된다.';
+    else if (s.n === 0 && sel === null) t = '아래에 손에 든 조각이 있다. ' + (hasField ? '먼저 밭을 눌러 봐라.' : '아무거나 하나 눌러 봐라.');
+    else if (sel !== null && s.n === 0) t = '칸마다 뜬 글자가 그 칸에 놓으면 얻는 양이다. 마음에 드는 칸을 눌러라.';
+    else if (sel !== null && s.hand[sel] === 'bakery' && fields < 2) t = '빵집은 아직 이르다. 빵집은 놓는 순간 옆에 있는 밭만 센다. 밭부터 놓아라.';
+    else if (hasBakery && fields < 2) t = '빵집은 손에 쥐고 있어라. 밭을 두 개 놓되, 둘 사이에 빈 칸을 하나 남겨라. 거기가 빵집 자리다.';
+    else if (hasBakery) t = '이제 빵집을 밭 옆 칸에 놓아라. 밭 하나당 빵 2다. 밭 둘 사이에 놓으면 빵 4다.';
+    else if (s.res.bread >= 4) t = '빵 4를 채웠다. 남은 조각도 놓아 봐라. 집은 붙여 놓으면 식구가 는다. 별이 붙은 조건이 추가 목표다.';
+    else t = '잘못 놓았으면 되돌리기를 눌러라. 흉보는 사람 없다. 나 빼고.';
+    return '<div class="memo coach"><div class="row" style="gap:8px;align-items:flex-start">' + img('grandma', null, null, 'roadc') + '<div><b>할머니의 훈수</b>' + esc(t) + '</div></div></div>';
+  }
+
   function vBuild() {
     var q = Q, s = G, h = '';
     var stuck = !s.over && !ST.canMove(s);
     var done = s.over || stuck;
     h += '<div class="row between" style="margin-bottom:8px"><div class="light">' + esc(q.who) + ' · ' + esc(q.title) + '</div>' +
       '<button class="small" data-a="quit">그만두기</button></div>';
+
+    h += coach(s, done);
 
     // 자원
     var target = {};

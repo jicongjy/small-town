@@ -200,3 +200,82 @@ img.scnp { width: 56px; height: 56px; background: #2f9e7f; border: 2px solid var
 .focus { outline: 3px solid #ffe07a; outline-offset: 3px; }
 .dimmed { opacity: 0.35; }
 @media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
+
+/* 짓기 화면: 스크롤 없이 한 화면. 고정된 것들을 뺀 나머지 높이에 땅을 맞춘다 */
+#app.v-build {
+  height: 100vh; height: 100dvh; min-height: 0; overflow: hidden;
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+}
+.v-build > * { flex: none; margin: 0; }
+.v-build .bt { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.v-build .memo { padding: 6px 8px; font-size: 12px; line-height: 1.45; }
+.v-build .res div { padding: 2px 6px 3px; }
+.v-build .gl { display: flex; flex-wrap: wrap; gap: 2px 12px; color: var(--paper); }
+.v-build .gl .goal { font-size: 12px; }
+.v-build .gl .goal.done { color: #9be7a5; }
+.v-build .rule { margin: 0; padding: 3px 8px; font-size: 11px; line-height: 1.4; }
+.bwrap { flex: 1 1 0; min-height: 110px; container-type: size; display: flex; align-items: center; justify-content: center; padding-bottom: 4px; }
+.bwrap .board { width: min(100cqw, 100cqh); height: min(100cqw, 100cqh); margin: 0; grid-template-rows: repeat(5, 1fr); }
+.bwrap .cell { aspect-ratio: auto; }
+.v-build .hint { font-size: 12px; line-height: 1.3; }
+.v-build .hand { gap: 6px; }
+.v-build .card { padding: 4px; line-height: 1.25; }
+.v-build .card img { width: 36px; height: 36px; }
+.v-build .fin { padding: 8px 12px; box-shadow: none; }
+.v-build .relic { padding: 2px 6px; font-size: 11px; }
+.v-build .relic img { width: 18px; height: 18px; }
+.v-build .relics { gap: 6px; }
+@media (max-height: 620px) {
+  .v-build .card .cat { font-size: 10px; }
+  .v-build .card img { width: 28px; height: 28px; }
+}
+
+/* 짐 싸기 타일 */
+.pk .pinfo { font-size: 12px; min-height: 38px; margin: 4px 0 8px; color: var(--ink-2); }
+.pk .pinfo b { font-weight: 400; color: var(--ink); font-size: 13px; }
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.tile { border: 2px solid var(--line); background: #fff; }
+.tile.on { background: #fff3c4; }
+.tile.cur { outline: 3px solid var(--gold); }
+.tile .tinfo { display: flex; align-items: center; gap: 6px; width: 100%; border: 0; box-shadow: none; background: transparent; padding: 4px; min-height: 0; text-align: left; font-size: 12px; line-height: 1.3; }
+.tile .tinfo:active { transform: none; }
+.tile .tinfo img { width: 28px; height: 28px; background: #2f9e7f; flex: none; }
+.tile .tinfo b { display: block; font-weight: 400; font-size: 13px; }
+.tile .pm { display: grid; grid-template-columns: 1fr 1fr; border-top: 2px solid var(--line); }
+.tile .pm button { border: 0; box-shadow: none; min-height: 30px; background: transparent; font-size: 16px; }
+.tile .pm button + button { border-left: 2px solid var(--line); }
+.rchips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.rchip { display: flex; align-items: center; gap: 4px; }
+.rchip img { width: 18px; height: 18px; object-fit: contain; }
+.rchip.on { background: #fff3c4; outline: 2px solid var(--gold); }
+.v-pack .memo { font-size: 12px; margin-bottom: 8px; }
+
+.v-build .hint { flex-wrap: wrap; }
+.v-build .rl { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; opacity: 0.9; }
+.v-build .rl img { width: 14px; height: 14px; object-fit: contain; }
+.v-build .acts button.small { padding: 4px 7px; }
+@media (max-height: 620px) {
+  .v-build .res .lb { display: none; }
+  .v-build .card img { width: 24px; height: 24px; }
+  .v-build .memo { font-size: 11px; }
+}
+
+/* 지도, 짐 싸기, 도감을 한 화면에 */
+#app.v-map, #app.v-pack, #app.v-dex { padding-top: 10px; }
+.v-map .quest { padding: 6px 10px; margin-bottom: 8px; min-height: 0; line-height: 1.4; }
+.v-map .portrait { padding: 3px; }
+.v-map .portrait img { width: 34px; }
+.v-map .portrait.two img { width: 26px; }
+.v-pack .panel { padding: 10px; margin-bottom: 10px; }
+.pk .pinfo { margin: 2px 0 6px; }
+.tile .pm button { min-height: 28px; }
+.dex { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.dex .it { padding: 4px 2px; }
+.dex .it img { width: 36px; height: 36px; margin-bottom: 2px; }
+.dex .it .nm { font-size: 12px; }
+.dex .it.cur { outline: 3px solid var(--gold); }
+.dinfo { min-height: 98px; margin: 8px 0; padding: 10px; }
+.dinfo .portrait img { width: 40px; }
+.dinfo p { font-size: 12px; margin-bottom: 2px; }
+.dl { margin: 6px 0 4px; font-size: 12px; }

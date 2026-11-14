@@ -176,3 +176,27 @@ img.roadc { width: 24px; height: auto; flex: none; }
 .memo.road { background: #e9f3ea; border-left-color: #3f8f4f; }
 .memo.road p { margin: 0 0 4px; }
 .memo.coach { background: #fff3c4; border: 2px solid var(--line); border-left: 4px solid var(--gold); margin-bottom: 8px; }
+
+/* 이야기 장면 */
+.scene { text-align: center; padding: 16px 14px; min-height: 250px; display: flex; flex-direction: column; justify-content: center; }
+.scene p { font-size: 15px; line-height: 1.7; margin: 0; word-break: keep-all; }
+.scene h2 { margin-bottom: 4px; }
+.scene .tag { color: var(--ink-2); font-size: 12px; margin-bottom: 8px; }
+.scene .art { display: flex; justify-content: center; align-items: flex-end; gap: 10px; margin-bottom: 14px; }
+img.scn { width: 88px; height: auto; }
+img.scnp { width: 56px; height: 56px; background: #2f9e7f; border: 2px solid var(--line); }
+.scene .portrait img { width: 72px; }
+.scene .portrait.two img { width: 56px; }
+.postcard.scene { text-align: left; }
+.postcard.scene p { font-size: 15px; padding-right: 44px; }
+.memo.reveal { background: #f1e9fb; border-left-color: #6f52a8; }
+
+/* 연습판 */
+.pulse { animation: pulse 0.9s ease-in-out infinite; }
+.card.pulse { outline: 3px solid var(--gold); }
+.cell.can.pulse { outline: 3px solid #ffe07a; background: rgba(255, 224, 122, 0.4); }
+@keyframes pulse { 0%, 100% { outline-offset: -3px; } 50% { outline-offset: 2px; } }
+.card.dim { opacity: 0.4; }
+.focus { outline: 3px solid #ffe07a; outline-offset: 3px; }
+.dimmed { opacity: 0.35; }
+@media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }

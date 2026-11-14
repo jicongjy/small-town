@@ -7,7 +7,7 @@
   var KEY = 'small-town-save-v1' + (slot ? '-' + slot : '');
 
   var save = load();
-  var V = { name: save ? 'map' : 'start' };
+  var V = save ? { name: 'map' } : { name: 'start', i: 0 };
   var Q = null;        // 지금 하는 의뢰
   var G = null;        // 지금 판의 상태
   var hist = [];       // 되돌리기용 기록
@@ -15,6 +15,7 @@
   var fx = null;       // 방금 놓은 결과(움직임 표시용)
   var draft = null;    // 짐 싸는 중인 내용
   var result = null;   // 평가 결과
+  var tut = null;      // 첫 의뢰 연습판 진행 상태
 
   function load() {
     try {
@@ -73,15 +74,36 @@
 
   // ───── 화면들 ─────
 
+  // 이야기 한 컷. 그림, 글, 넘기는 단추로 이루어진다.
+  function cutArt(c) {
+    var h = '<div class="art">';
+    (c.imgs || []).forEach(function (n) { h += img(n, null, null, 'scn'); });
+    (c.pieces || []).forEach(function (n) { h += img(n, null, 16, 'scnp'); });
+    return h + '</div>';
+  }
+  function cutNav(i, total, back, next, nextLabel) {
+    return '<div class="row"><button data-a="' + back + '"' + (i ? '' : ' disabled') + '>이전</button>' +
+      '<span class="light" style="font-size:12px">' + (i + 1) + ' / ' + total + '</span>' +
+      '<button class="primary" style="flex:1" data-a="' + next + '">' + nextLabel + '</button></div>';
+  }
+
   function vStart() {
-    var h = '<div class="gap"></div><h1 class="light center">' + ST.TEXT.title + '</h1><div class="gap"></div>';
-    h += '<div class="panel"><div class="row" style="align-items:flex-start;gap:12px">' +
-      '<span class="portrait">' + img('grandma') + '</span><div>';
-    ST.TEXT.note.forEach(function (l) { h += '<p>' + esc(l) + '</p>'; });
-    h += '<p class="muted">봉 할머니가</p></div></div></div>';
-    h += '<div class="panel"><p>노트 표지에 이름을 적는다.</p>' +
-      '<input type="text" id="nm" maxlength="8" placeholder="손주" autocomplete="off">' +
-      '<div class="gap"></div><button class="primary wide" data-a="begin">노트를 편다</button></div>';
+    var cuts = ST.TEXT.prologue, i = V.i, c = cuts[i];
+    var h = '<div class="row between"><h1 class="light">' + ST.TEXT.title + '</h1>' +
+      (c.name ? '' : '<button class="ghost small" data-a="proskip">건너뛰기</button>') + '</div><div class="gap"></div>';
+    if (c.letter) {
+      h += '<div class="postcard scene"><p>' + esc(c.text) + '</p><div class="from">' + esc(c.from) + '</div></div><div class="gap"></div>';
+    } else {
+      h += '<div class="panel scene">' + cutArt(c) + '<p>' + esc(c.text) + '</p></div>';
+    }
+    if (c.name) {
+      h += '<div class="panel"><p>노트 표지에 이름을 적는다.</p>' +
+        '<input type="text" id="nm" maxlength="8" placeholder="손주" autocomplete="off">' +
+        '<div class="gap"></div><div class="row"><button data-a="proback">이전</button>' +
+        '<button class="primary" style="flex:1" data-a="begin">노트를 편다</button></div></div>';
+    } else {
+      h += cutNav(i, cuts.length, 'proback', 'pronext', '다음');
+    }
     return h;
   }
 
@@ -114,22 +136,52 @@
     return '<p class="muted">의뢰인이 내놓은 조각: ' + parts.join(', ') + ' (짐 개수에 안 들어간다)</p>';
   }
 
+  // 의뢰 소개를 한 컷씩으로 나눈다: 길 위에서, 등장 카드, 의뢰인의 말
+  function introCuts(q) {
+    var cuts = [];
+    (q.road || []).forEach(function (l) { cuts.push({ kind: 'road', text: l }); });
+    cuts.push({ kind: 'card' });
+    q.intro.forEach(function (l) { cuts.push({ kind: 'say', text: l }); });
+    return cuts;
+  }
+  function isTut() { return Q && Q.id === 'q1' && !(save.stars.q1 > 0); }
+  function lesson(q, at) {
+    if (!q.lesson || q.lesson.at !== at || (save.stars[q.id] || 0) > 0) return '';
+    return noteMemo('할머니의 훈수', q.lesson.text);
+  }
+  function noteMemo(title, text) {
+    return '<div class="memo coach"><div class="row" style="gap:8px;align-items:flex-start">' + img('grandma', null, null, 'roadc') +
+      '<div><b>' + esc(title) + '</b>' + esc(text) + '</div></div></div>';
+  }
+
   function vIntro() {
-    var q = Q;
-    var h = '';
-    if (q.road) {
-      h += '<div class="memo road"><div class="row" style="gap:8px;margin-bottom:4px">' + img('hero', null, null, 'roadc') + img('donkey', null, null, 'roadc') + '<b style="display:inline">길 위에서</b></div>';
-      q.road.forEach(function (l) { h += '<p>' + esc(l) + '</p>'; });
-      h += '</div>';
+    var q = Q, cuts = introCuts(q), i = V.i, h = '';
+    if (i < cuts.length) {
+      var c = cuts[i];
+      h += '<div class="row between"><div class="light">' + (ST.QUESTS.indexOf(q) + 1) + '번째 의뢰</div>' +
+        '<button class="ghost small" data-a="introskip">건너뛰기</button></div><div class="gap"></div>';
+      if (c.kind === 'road') {
+        h += '<div class="panel scene"><div class="tag">길 위에서</div>' + cutArt({ imgs: ['hero', 'donkey'] }) + '<p>' + esc(c.text) + '</p></div>';
+      } else if (c.kind === 'card') {
+        h += '<div class="panel scene"><div class="tag">의뢰인</div><div class="art">' + portrait(q) + '</div>' +
+          '<h2>' + esc(q.who) + '</h2><p>' + esc(q.bio) + '</p>' +
+          '<div class="memo" style="margin:10px 0 0;text-align:left"><b>할머니의 노트</b>' + esc(q.note) + '</div></div>';
+      } else {
+        h += '<div class="panel scene"><div class="tag">' + esc(q.who) + '</div><div class="art">' + portrait(q) + '</div><p>' + esc(c.text) + '</p></div>';
+      }
+      h += cutNav(i, cuts.length, 'introback', 'intronext', i === cuts.length - 1 ? '의뢰 조건 보기' : '다음');
+      return h;
     }
     h += '<div class="panel"><div class="row" style="gap:12px">' + portrait(q) +
-      '<div><div class="muted">' + esc(q.who) + '</div><h2>' + esc(q.title) + '</h2></div></div><div class="gap"></div>';
-    q.intro.forEach(function (l) { h += '<p class="say">' + esc(l) + '</p>'; });
-    h += '</div><div class="panel"><h2>의뢰 조건</h2><div class="gap" style="height:6px"></div>' + goalsHtml(q, null) +
+      '<div><div class="muted">' + esc(q.who) + '</div><h2>' + esc(q.title) + '</h2></div></div></div>';
+    h += '<div class="panel"><h2>의뢰 조건</h2><div class="gap" style="height:6px"></div>' + goalsHtml(q, null) +
       '<p class="muted" style="margin-top:6px">별이 붙은 조건은 추가 목표다. 별 하나마다 보상을 하나 더 고른다.</p>' +
       (q.ruleText ? '<div class="rule">특별 규칙: ' + esc(q.ruleText) + '</div>' : '') + '</div>';
+    h += lesson(q, 'rule');
     if (q.lend.length) h += '<div class="panel">' + lendHtml(q) + '</div>';
-    h += '<div class="row"><button data-a="map">돌아가기</button><button class="primary" style="flex:1" data-a="pack">짐 싸기</button></div>';
+    h += '<div class="row"><button data-a="map">지도로</button><button data-a="story">이야기 다시 보기</button>' +
+      (isTut() ? '<button class="primary" style="flex:1" data-a="tutgo">밀순이네 땅으로</button>'
+        : '<button class="primary" style="flex:1" data-a="pack">짐 싸기</button>') + '</div>';
     return h;
   }
 
@@ -172,6 +224,7 @@
     var q = Q, lim = limit(), n = draftCount();
     var h = '<div class="panel"><div class="row between"><h2>짐 싸기</h2><span>' + n + ' / ' + lim + '</span></div>' +
       '<p class="muted">두부가 실을 조각을 고른다. ' + (q.rule === 'six' ? '이장님 의뢰는 6개만.' : '') + '</p>';
+    h = lesson(q, 'pack') + h;
     ST.PIECE_ORDER.forEach(function (id) {
       var have = save.coll[id] || 0;
       if (!have) return;
@@ -184,6 +237,7 @@
     });
     h += lendHtml(q) + '</div>';
     if (save.relics.length) {
+      h += lesson(q, 'relic');
       h += '<div class="panel"><div class="row between"><h2>유물</h2><span>' + draft.relics.length + ' / 2</span></div>' +
         '<p class="muted">두부의 안장 주머니는 두 칸이다.</p>';
       ST.RELIC_ORDER.forEach(function (id) {
@@ -195,7 +249,7 @@
       });
       h += '</div>';
     }
-    h += '<div class="row"><button data-a="intro" data-q="' + q.id + '">돌아가기</button>' +
+    h += '<div class="row"><button data-a="intro" data-skip="1" data-q="' + q.id + '">돌아가기</button>' +
       '<button class="primary" style="flex:1" data-a="go"' + (n === lim ? '' : ' disabled') + '>' +
       (n === lim ? '출발' : (n < lim ? (lim - n) + '개 더 고르기' : (n - lim) + '개 빼기')) + '</button></div>';
     return h;
@@ -209,22 +263,33 @@
     return i % 2 ? 'pine' : 'tree';
   }
 
-  // 첫 의뢰를 깨기 전에는 할머니가 한 수씩 알려 준다
-  function coach(s, done) {
-    if (Q.id !== 'q1' || (save.stars.q1 || 0) > 0) return '';
-    var fields = 0, i;
-    for (i = 0; i < 25; i++) if (s.board[i] && s.board[i].id === 'field') fields++;
-    var hasBakery = s.hand.indexOf('bakery') >= 0, hasField = s.hand.indexOf('field') >= 0;
-    var t;
-    if (done) t = '다 놓았으면 의뢰인에게 보여 줘라. 조건을 못 채웠어도 괜찮다. 다시 지으면 된다.';
-    else if (s.n === 0 && sel === null) t = '아래에 손에 든 조각이 있다. ' + (hasField ? '먼저 밭을 눌러 봐라.' : '아무거나 하나 눌러 봐라.');
-    else if (sel !== null && s.n === 0) t = '칸마다 뜬 글자가 그 칸에 놓으면 얻는 양이다. 마음에 드는 칸을 눌러라.';
-    else if (sel !== null && s.hand[sel] === 'bakery' && fields < 2) t = '빵집은 아직 이르다. 빵집은 놓는 순간 옆에 있는 밭만 센다. 밭부터 놓아라.';
-    else if (hasBakery && fields < 2) t = '빵집은 손에 쥐고 있어라. 밭을 두 개 놓되, 둘 사이에 빈 칸을 하나 남겨라. 거기가 빵집 자리다.';
-    else if (hasBakery) t = '이제 빵집을 밭 옆 칸에 놓아라. 밭 하나당 빵 2다. 밭 둘 사이에 놓으면 빵 4다.';
-    else if (s.res.bread >= 4) t = '빵 4를 채웠다. 남은 조각도 놓아 봐라. 집은 붙여 놓으면 식구가 는다. 별이 붙은 조건이 추가 목표다.';
-    else t = '잘못 놓았으면 되돌리기를 눌러라. 흉보는 사람 없다. 나 빼고.';
-    return '<div class="memo coach"><div class="row" style="gap:8px;align-items:flex-start">' + img('grandma', null, null, 'roadc') + '<div><b>할머니의 훈수</b>' + esc(t) + '</div></div></div>';
+  // 첫 의뢰 연습판. 지금 판의 상태를 보고 몇 번째 단계인지 정한다(되돌리기를 눌러도 맞게 따라간다).
+  // need는 지금 집어야 하는 조각, cells는 놓을 수 있는 칸, wait는 "다음"을 눌러야 넘어가는 단계.
+  function tutStep() {
+    if (!tut || !isTut()) return null;
+    var T = ST.TUTOR, s = G, i, k;
+    if (tut.pre < T.pre.length) return { wait: true, text: T.pre[tut.pre].text, focus: T.pre[tut.pre].focus || 'none' };
+    if (s.n === 0) return { need: 'field', cells: [T.cells.field1], text: T.field1 };
+    if (s.n === 1) return { need: 'field', cells: [T.cells.field2], text: T.field2 };
+    if (s.n === 2) return { need: 'bakery', cells: [T.cells.bakery], text: T.bakery };
+    if (s.n === 3 && !tut.ack) return { wait: true, text: T.why };
+    var empty = [], near = [];
+    for (i = 0; i < 25; i++) {
+      if (s.board[i]) continue;
+      empty.push(i);
+      var ns = [i - 5, i + 5, i % 5 ? i - 1 : -1, i % 5 < 4 ? i + 1 : -1];
+      for (k = 0; k < 4; k++) if (ns[k] >= 0 && ns[k] < 25 && s.board[ns[k]] && s.board[ns[k]].id === 'house') { near.push(i); break; }
+    }
+    if (s.n === 3) return { need: 'house', cells: empty, text: T.house1 };
+    if (s.n === 4) return { need: 'house', cells: near, text: T.house2 };
+    return { free: true, text: T.free };
+  }
+  function coach(ts) {
+    if (!ts) return '';
+    return '<div class="memo coach"><div class="row" style="gap:8px;align-items:flex-start">' + img('grandma', null, null, 'roadc') +
+      '<div style="flex:1"><b>노트 첫 장 · 할머니 글씨</b>' + esc(ts.text) +
+      (ts.wait ? '<div style="text-align:right;margin-top:6px"><button class="small primary" data-a="tnext">다음</button></div>' : '') +
+      '</div></div></div>';
   }
 
   function vBuild() {
@@ -234,12 +299,15 @@
     h += '<div class="row between" style="margin-bottom:8px"><div class="light">' + esc(q.who) + ' · ' + esc(q.title) + '</div>' +
       '<button class="small" data-a="quit">그만두기</button></div>';
 
-    h += coach(s, done);
+    var ts = tutStep();
+    var lock = ts && !ts.free;          // 연습판이 순서를 정해 주는 동안
+    function foc(part) { return ts && ts.focus ? (ts.focus === part ? ' focus' : ' dimmed') : ''; }
+    h += coach(ts);
 
     // 자원
     var target = {};
     q.goals.forEach(function (g) { if (g.r) target[g.r] = g.n; });
-    h += '<div class="res">';
+    h += '<div class="res' + foc('res') + '">';
     ST.RES_ORDER.forEach(function (r) {
       var t = target[r], met = t && s.res[r] >= t;
       h += '<div><span class="lb">' + ST.RES[r].name + '</span><span class="vl">' + img(ST.RES[r].icon) +
@@ -248,7 +316,7 @@
     h += '</div>';
 
     // 땅
-    h += '<div class="board" style="background-image:url(' + ST.ground(q.ground, q.id.charCodeAt(1)) + ')">';
+    h += '<div class="board' + foc('board') + '" style="background-image:url(' + ST.ground(q.ground, q.id.charCodeAt(1)) + ')">';
     for (var i = 0; i < 25; i++) {
       var c = s.board[i], cls = 'cell', inner = '';
       if (c && c.k === 't') inner = img(terrainSprite(c.t, i), q.ground, 16);
@@ -257,11 +325,13 @@
         cls += ' empty';
         if (sel !== null && !done) {
           var g = ST.preview(s, sel, i);
+          if (lock && (!ts.cells || ts.cells.indexOf(i) < 0)) g = null, cls += ' off';
           if (g) {
+            if (lock) cls += ' pulse';
             var gt = gainText(g);
             cls += ' can';
             inner = '<span class="pv">' + (gt.length ? gt.join('<br>') : '0') + '</span>';
-          } else cls += ' cannot';
+          } else if (!lock) cls += ' cannot';
         }
       }
       h += '<button class="' + cls + '" data-a="cell" data-i="' + i + '" aria-label="' + (Math.floor(i / 5) + 1) + '번째 줄 ' + (i % 5 + 1) + '번째 칸">' + inner + '</button>';
@@ -272,10 +342,12 @@
     if (!done) {
       h += '<div class="row between light" style="font-size:12px;margin-bottom:6px"><span>' +
         (sel === null ? '놓을 조각을 고르세요' : '놓을 칸을 누르세요. 숫자는 그 칸에 놓으면 얻는 양입니다') + '</span><span>남은 짐 ' + s.bag.length + '개</span></div>';
-      h += '<div class="hand' + (s.hand.length > 3 ? ' four' : '') + '">';
+      h += '<div class="hand' + (s.hand.length > 3 ? ' four' : '') + foc('hand') + '">';
+      var want = lock && ts.need ? s.hand.indexOf(ts.need) : -1;
       s.hand.forEach(function (id, k) {
         var p = ST.PIECES[id];
-        h += '<button class="card' + (sel === k ? ' sel' : '') + '" data-a="card" data-k="' + k + '">' + img(id, null, 16) +
+        var off = lock && (ts.wait || id !== ts.need);
+        h += '<button class="card' + (sel === k ? ' sel' : '') + (off ? ' dim' : '') + (sel === null && k === want ? ' pulse' : '') + '" data-a="card" data-k="' + k + '"' + (off ? ' disabled' : '') + '>' + img(id, null, 16) +
           '<span class="nm">' + p.name + '</span><span class="cat">' + esc(p.desc) + '</span></button>';
       });
       h += '</div>';
@@ -298,10 +370,10 @@
 
     h += '<div class="row" style="margin-bottom:12px"><button data-a="undo"' + (hist.length ? '' : ' disabled') + '>되돌리기</button>' +
       '<button data-a="restart">다시 하기</button>' +
-      (!done ? '<button style="margin-left:auto" data-a="finish"' + (s.n ? '' : ' disabled') + '>여기까지 짓기</button>' : '') + '</div>';
+      (!done ? '<button style="margin-left:auto" data-a="finish"' + (s.n && !lock ? '' : ' disabled') + '>여기까지 짓기</button>' : '') + '</div>';
 
     h += '<div class="panel">' + goalsHtml(q, s) + (q.ruleText ? '<div class="rule">특별 규칙: ' + esc(q.ruleText) + '</div>' : '') + '</div>';
-    h += '<div class="memo"><b>할머니의 메모</b>' + esc(q.tip) + '</div>';
+    if (!ts) h += '<div class="memo"><b>할머니의 메모</b>' + esc(q.tip) + '</div>';
     return h;
   }
 
@@ -327,7 +399,9 @@
     h += '</div></div><div class="gap"></div>' + goalsHtml(q, G) + '</div>';
     if (r.first) {
       h += '<div class="postcard"><p>' + esc(q.card) + '</p><div class="from">온천에서, 할머니가</div></div><div class="gap"></div>';
+      if (q.reveal) h += '<div class="memo reveal"><b>노트에 드러난 것</b>' + esc(q.reveal) + '</div>';
     }
+    if (r.tut && r.ev.stars < 3) h += noteMemo('노트 첫 장 · 할머니 글씨', ST.TUTOR.end);
     if (r.got.length) {
       h += '<div class="panel"><h2>받은 것</h2>';
       r.got.forEach(function (i) { h += rewardHtml(q.rewards[i], false); });
@@ -413,14 +487,27 @@
     save.lastBag = JSON.parse(JSON.stringify(draft.bag));
     save.eq = draft.relics.slice();
     persist();
+    newBoard(bag);
+  }
+  // 새 판을 편다. 연습판이면 손에 들어오는 순서를 정해 둔다.
+  function newBoard(bag) {
     G = ST.newGame(Q, bag, draft.relics, (Date.now() % 100000) + 1);
+    tut = null;
+    if (isTut()) {
+      var order = ST.TUTOR.order.slice(), rest = bag.slice(), ok = true;
+      order.forEach(function (id) { var k = rest.indexOf(id); if (k < 0) ok = false; else rest.splice(k, 1); });
+      if (ok && !rest.length) {
+        G.hand = order.splice(0, G.handSize); G.bag = order;
+        tut = { pre: 0, ack: false };
+      }
+    }
     hist = []; sel = null; fx = null;
     go('build');
   }
 
   function judge() {
     var ev = ST.evaluate(G, Q);
-    var r = { ev: ev, first: false, got: [], left: [], toPick: 0 };
+    var r = { ev: ev, first: false, got: [], left: [], toPick: 0, tut: !!tut && isTut() };
     if (ev.base) {
       var prev = save.stars[Q.id] || 0;
       r.first = prev === 0;
@@ -453,7 +540,21 @@
   var ACT = {
     begin: function () {
       var v = (document.getElementById('nm').value || '').trim() || '손주';
-      save = fresh(v); persist(); go('map');
+      save = fresh(v); persist();
+      Q = ST.QUESTS[0]; go('intro', { i: 0 });
+    },
+    pronext: function () { V.i = Math.min(V.i + 1, ST.TEXT.prologue.length - 1); render(); window.scrollTo(0, 0); },
+    proback: function () { V.i = Math.max(V.i - 1, 0); render(); },
+    proskip: function () { V.i = ST.TEXT.prologue.length - 1; render(); },
+    intronext: function () { V.i++; render(); window.scrollTo(0, 0); },
+    introback: function () { V.i = Math.max(V.i - 1, 0); render(); },
+    introskip: function () { V.i = introCuts(Q).length; render(); },
+    story: function () { V.i = 0; render(); },
+    tutgo: function () { makeDraft(); startGame(); },
+    tnext: function () {
+      if (!tut) return;
+      if (tut.pre < ST.TUTOR.pre.length) tut.pre++; else tut.ack = true;
+      render();
     },
     map: function () { go('map'); },
     dex: function () { go('dex', { sel: null }); },
@@ -461,10 +562,14 @@
     reset: function () {
       if (window.confirm('모은 조각과 별이 전부 사라집니다. 처음부터 다시 할까요?')) {
         try { localStorage.removeItem(KEY); } catch (e) {}
-        save = null; go('start');
+        save = null; go('start', { i: 0 });
       }
     },
-    intro: function (d) { Q = quest(d.q); go('intro'); },
+    // 이미 끝낸 의뢰는 이야기를 건너뛰고 조건부터 보여 준다
+    intro: function (d) {
+      Q = quest(d.q);
+      go('intro', { i: (save.stars[Q.id] || 0) > 0 || d.skip ? introCuts(Q).length : 0 });
+    },
     pack: function () { makeDraft(); go('pack'); },
     more: function (d) {
       if (draftCount() < limit() && (draft.bag[d.id] || 0) < (save.coll[d.id] || 0)) draft.bag[d.id] = (draft.bag[d.id] || 0) + 1;
@@ -484,10 +589,15 @@
       render();
     },
     go: function () { if (draftCount() === limit()) startGame(); },
-    card: function (d) { sel = sel === +d.k ? null : +d.k; render(); },
+    card: function (d) {
+      var ts = tutStep();
+      if (ts && !ts.free && (ts.wait || G.hand[+d.k] !== ts.need)) return;
+      sel = sel === +d.k ? null : +d.k; render();
+    },
     cell: function (d) {
       if (sel === null || G.over) return;
-      var i = +d.i, snap = JSON.stringify(G);
+      var i = +d.i, snap = JSON.stringify(G), ts = tutStep();
+      if (ts && !ts.free && (!ts.cells || ts.cells.indexOf(i) < 0)) return;
       var parts = ST.place(G, sel, i);
       if (!parts) return;
       hist.push(snap);
@@ -502,8 +612,7 @@
     restart: function () {
       var bag = [];
       for (var id in draft.bag) for (var i = 0; i < draft.bag[id]; i++) bag.push(id);
-      G = ST.newGame(Q, bag.concat(Q.lend), draft.relics, (Date.now() % 100000) + 1);
-      hist = []; sel = null; fx = null; go('build');
+      newBoard(bag.concat(Q.lend));
     },
     redraw: function () {
       var snap = JSON.stringify(G);

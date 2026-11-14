@@ -53,6 +53,10 @@
     brewer: ['...uuuuuu', '..uuuuuuuu', '...OOOOOO', '...FKFFKF', '...FFRRFF', '...FFFFFF', '...UUUUUU', '..BBBBBBBB', '..FBBBBBBF', '..FBBBBBBF', '...BBBBBB', '...KK..KK', '...bb..bb'],
     chief: ['....KKKK', '....KKKK', '...KKKKKK', '...FFFFFF', '...FKFFKF', '...FbbbbF', '....FFFF', '..rrrrrrrr', '.FrrrHHrrrF', '.FrrrrrrrrF', '..rrrrrrrr', '...KK..KK', '...bb..bb'],
 
+    // 이야기 장면용
+    note: ['..bbbbbbbbb', '..bPPPPPPPb', '..bPOOOOOPb', '..bPOKKKOPb', '..bPOOOOOPb', '..bPPPPPPPb', '..bPPPPPPPb', '..bPPPHPPPb', '..bPPPPPPPb', '..bbbbbbbbb'],
+    crate: ['', '', '', '.BBBBBBBBBB', '.BPPPPPPPPB', '.BbbbbbbbbB', '.BPPPPPPPPB', '.BPPPPPPPPB', '.BbbbbbbbbB', '.BPPPPPPPPB', '.BBBBBBBBBB'],
+
     // 유물
     r_compass: ['....SSSS', '..SSOOOOSS', '.SOOOROOOOS', '.SOOORROOOS', 'SOOOORROOOOS', 'SOOOOKKOOOOS', 'SOOOOssOOOOS', '.SOOOssOOOS', '.SOOOOsOOOS', '..SSOOOOSS', '....SSSS'],
     r_dawnbell: ['.....bb', '.....HH', '....HHHH', '...HHHHHH', '...HyHHHH', '...HyHHHH', '..HHyHHHHH', '..HHHHHHHH', '.HHHHHHHHHH', '.hhhhhhhhhh', '.....KK'],

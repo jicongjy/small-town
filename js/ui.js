@@ -85,6 +85,15 @@
     return '<span class="bchip">' + img('star') + (g.r ? img(ST.RES[g.r].icon, null, null, 'bi') + ST.RES[g.r].name + ' ' + g.n + ST.RES[g.r].unit : esc(ST.goalText(g))) + '</span>';
   }
   function goalTiles(q) {
+    if (q.days) {
+      var hd = '<div class="todo"><div class="todo-h">해야 할 일 <small>닷새마다 장날, 장날마다 빵을 내요</small></div><div class="gts n' + q.days.quota.length + '">';
+      q.days.quota.forEach(function (n, i) {
+        hd += '<div class="gt"><span class="mk">' + (i + 1) + '번째 장날</span>' + img('i_bread', null, null, 'gi') + '<span class="num">' + n + '<small>개</small></span></div>';
+      });
+      hd += '</div></div><div class="more"><div class="todo-h">여유가 되면 <small>하나 할 때마다 별 1개 더!</small></div><div class="bchips">';
+      q.days.bonus.forEach(function (g) { hd += '<span class="bchip">' + img('star') + esc(ST.daysGoalText(g)) + '</span>'; });
+      return hd + '</div></div>';
+    }
     var h = '<div class="todo"><div class="todo-h">해야 할 일</div><div class="gts n' + q.goals.length + '">';
     q.goals.forEach(function (g) { h += goalTile(g); });
     h += '</div></div><div class="more"><div class="todo-h">여유가 되면 <small>하나 할 때마다 별 1개 더!</small></div><div class="bchips">';
@@ -93,6 +102,13 @@
   }
   function goalsHtml(q, s) {
     var h = '';
+    if (q.days) {
+      h += '<div class="goal' + (s && s.won ? ' done' : '') + '"><span class="box"></span><span>장날 ' + q.days.quota.length + '번 넘기기</span></div>';
+      q.days.bonus.forEach(function (g) {
+        h += '<div class="goal' + (s && s.won && ST.days.meets(s, g) ? ' done' : '') + '"><span class="box"></span>' + img('star', null, null, 'gs') + '<span>' + esc(ST.daysGoalText(g)) + '</span></div>';
+      });
+      return h;
+    }
     q.goals.forEach(function (g) { h += goalLine(g, s, false); });
     q.bonus.forEach(function (g) { h += goalLine(g, s, true); });
     return h;
@@ -498,6 +514,135 @@
     return h;
   }
 
+  // ───── 날짜 규칙의 짓기 화면 ─────
+  function deltaText(g) {
+    var out = [];
+    ST.RES_ORDER.forEach(function (r) { if (g[r]) out.push(ST.RES[r].name + (g[r] > 0 ? '+' : '') + g[r]); });
+    return out;
+  }
+  function daysTip(s) {
+    if (save.stars[Q.id] || s.week > 0) return '';
+    var t;
+    if (s.day === 1 && sel === null) t = '이 마을에서는 하루에 조각을 하나씩 놓는단다. 손에 든 셋 중 하나를 골라 봐. 나머지 둘은 며칠 뒤에 다시 돌아온다.';
+    else if (s.day === 1) t = '칸에 뜬 숫자가 "밤마다 얼마나 더 버는지"야. 건물은 한 번 지으면 매일 밤 일한다. 숫자 큰 칸에 놓아 봐.';
+    else if (s.day === 2) t = '밤사이 건물들이 일했지? 위에 "+" 숫자가 매일 밤 들어오는 양이다. 일찍 지을수록 오래 번다.';
+    else if (s.day === 3) t = '닷새째가 장날이야. 밀순이가 빵을 가져간다. 빵이 모자라면 곡식 2개나 금화 3개가 빵 1개로 쳐진다.';
+    else return '';
+    return noteMemo('', t);
+  }
+  function vDays() {
+    var q = Q, s = G, D = ST.days, h = '', i;
+    if (s.phase === 'over') {
+      return '<div class="panel center"><p>' + (s.won ? '마지막 장날까지 넘겼어요!' : '장날에 빵이 ' + s.market.short + '개 모자랐어요.') + '</p>' +
+        '<button class="primary wide" data-a="judge">' + esc(q.who) + '에게 가기</button></div>';
+    }
+    var wk = s.week, dw = (s.day - 1) % s.perWeek, need = s.quota[Math.min(wk, s.quota.length - 1)];
+
+    if (s.phase === 'event') {
+      var e = ST.EVENTS[s.event];
+      h += '<div class="light center lead">' + (wk + 1) + '주차 · ' + (dw + 1) + '일째 아침</div>';
+      h += '<div class="panel scene ev"><div class="tag">무슨 일이 생겼다</div><div class="art">' +
+        e.art.map(function (a) { return e.piece ? img(a, 'day', 16, 'scnp') : img(a, null, null, 'scn'); }).join('') + '</div>' +
+        '<h2>' + esc(e.title) + '</h2><p>' + esc(e.text) + '</p></div>';
+      e.choices.forEach(function (ch, n) {
+        h += '<button class="choice" data-a="evchoose" data-i="' + n + '"' + (D.canChoose(s, ch) ? '' : ' disabled') + '><b>' + esc(ch.label) + '</b><span>' + esc(ch.note || '') + '</span></button>';
+      });
+      return h;
+    }
+    if (s.phase === 'market') {
+      var m = s.market;
+      h += '<div class="banner"><div class="light sm">' + (m.week + 1) + '번째 장날</div><h1 class="light">장날이다!</h1></div>';
+      h += '<div class="talk"><div class="who">' + portrait(q) + '<span>' + esc(q.who) + '</span></div><div class="bubbles"><p class="bubble">빵 ' + m.need + '개, 잘 받아 가요!</p></div></div>';
+      h += '<div class="panel mk-pay"><h2>이렇게 냈어요</h2><div class="payrow">' +
+        (m.pay.bread ? '<span>' + img('i_bread') + '빵 ' + m.pay.bread + '개</span>' : '') +
+        (m.pay.grain ? '<span>' + img('i_grain') + '곡식 ' + m.pay.grain + '개 <small>→ 빵 ' + (m.pay.grain / D.GRAIN_PER_BREAD) + '개</small></span>' : '') +
+        (m.pay.gold ? '<span>' + img('i_gold') + '금화 ' + m.pay.gold + '개 <small>→ 빵 ' + (m.pay.gold / D.GOLD_PER_BREAD) + '개</small></span>' : '') + '</div>' +
+        '<p class="muted">다음 장날에는 빵 ' + s.quota[wk] + '개가 필요해요.</p></div>';
+      h += '<button class="primary wide" data-a="tomarket" style="margin-top:auto">할머니가 보낸 조각 보기</button>';
+      return h;
+    }
+    if (s.phase === 'reward') {
+      h += '<div class="light center lead">장날 선물: 조각 하나를 덱에 넣어요</div>';
+      h += '<div class="panel giftbox"><div class="gb-top"><p>이번 의뢰 동안 쓸 수 있어요. 고르면 며칠 안에 손에 들어와요.</p></div><div class="gifts">';
+      s.offer.forEach(function (id, n) {
+        var p = ST.PIECES[id];
+        h += '<button class="gift pick" data-a="rwtake" data-i="' + n + '"><span class="kind">조각</span><span class="pic">' + img(id, null, 16) + '</span><span class="nm">' + p.name + '</span><span class="ds">' + esc(p.daily) + '</span></button>';
+      });
+      h += '</div></div>';
+      var canRe = s.rerolls < D.REROLL_MAX && s.res.gold >= D.REROLL_COST;
+      h += '<div class="row" style="margin-top:auto"><button data-a="rwtake" data-i="-1">안 받기</button>' +
+        '<button style="flex:1" data-a="rwreroll"' + (canRe ? '' : ' disabled') + '>다시 뽑기 · 금화 ' + D.REROLL_COST + '개 <small>(' + (D.REROLL_MAX - s.rerolls) + '번 남음, 가진 금화 ' + s.res.gold + ')</small></button></div>';
+      return h;
+    }
+
+    // 평소: 하루에 하나 놓기
+    var P = D.produce(s), worth = D.worth(s.res), left = D.daysLeft(s);
+    h += '<div class="row between"><div class="light bt">' + esc(q.who) + ' · ' + (wk + 1) + '주차</div>' +
+      '<span class="row" style="gap:6px"><button class="small" data-a="dkopen">덱 ' + s.deck.length + ' · 버림 ' + s.discard.length + '</button><button class="small" data-a="quit">그만두기</button></span></div>';
+    h += daysTip(s);
+    h += '<div class="daybar">';
+    for (i = 0; i < s.perWeek; i++) {
+      h += '<span class="dp' + (i < dw ? ' past' : (i === dw ? ' now' : '')) + (i === s.perWeek - 1 ? ' mkt' : '') + '">' + (i === s.perWeek - 1 ? '장날' : (i + 1) + '일') + '</span>';
+    }
+    h += '</div>';
+    var pct = Math.min(100, Math.round(worth / need * 100));
+    h += '<div class="quota"><div class="qtxt"><span>장날에 낼 빵 <b>' + need + '개</b></span><span class="' + (worth >= need ? 'ok' : '') + '">지금 ' + worth + '개어치 · 밤 ' + left + '번 남음</span></div>' +
+      '<div class="qbar"><i style="width:' + pct + '%"></i></div></div>';
+    var inc = { grain: P.grain, bread: P.bread, gold: P.gold, people: 0 };
+    var have = { grain: s.res.grain, bread: s.res.bread, gold: s.res.gold, people: P.people };
+    h += '<div class="res">';
+    ST.RES_ORDER.forEach(function (r) {
+      h += '<div><span class="lb">' + ST.RES[r].name + '</span><span class="vl">' + img(ST.RES[r].icon) + '<span>' + have[r] + '</span>' +
+        (inc[r] ? '<small class="inc">+' + inc[r] + '</small>' : '') + '</span></div>';
+    });
+    h += '</div>';
+
+    if (V.deck) {
+      var cnt = function (arr) {
+        var c = {};
+        arr.forEach(function (id) { c[id] = (c[id] || 0) + 1; });
+        return ST.PIECE_ORDER.filter(function (id) { return c[id]; }).map(function (id) {
+          return '<span class="dk">' + img(id, null, 16) + ST.PIECES[id].name + ' ' + c[id] + '</span>';
+        }).join('') || '<span class="muted">없음</span>';
+      };
+      h += '<div class="panel dkpanel"><div class="row between"><h2>내 조각</h2><button class="small" data-a="dkopen">닫기</button></div>' +
+        '<p class="muted">곧 나올 조각 (덱)</p><div class="dkrow">' + cnt(s.deck) + '</div>' +
+        '<p class="muted">쓴 조각 (버림 더미). 덱이 비면 섞여서 다시 나와요.</p><div class="dkrow">' + cnt(s.discard) + '</div></div>';
+    }
+
+    h += '<div class="bwrap"><div class="board" style="background-image:url(' + ST.ground(q.ground, q.id.charCodeAt(1)) + ')">';
+    for (i = 0; i < 25; i++) {
+      var c = s.board[i], cls = 'cell', inner = '';
+      if (c && c.k === 't') inner = img(terrainSprite(c.t, i), q.ground, 16);
+      else {
+        if (c) { inner = img(c.id, q.ground, 16); if (fx && fx.cell === i) cls += ' pop'; }
+        else cls += ' empty';
+        if (sel !== null) {
+          var pv = D.preview(s, sel, i);
+          if (pv) {
+            var dt = deltaText(pv);
+            cls += (c ? ' swap' : ' can') + (pv.rate > 0 ? ' good' : (pv.rate < 0 ? ' bad' : ''));
+            inner += '<span class="pv">' + (dt.length ? dt.join('<br>') : (c ? '바꾸기' : '0')) + '</span>';
+          } else cls += ' cannot';
+        }
+      }
+      h += '<button class="' + cls + '" data-a="dcell" data-i="' + i + '" aria-label="' + (Math.floor(i / 5) + 1) + '번째 줄 ' + (i % 5 + 1) + '번째 칸">' + inner + '</button>';
+    }
+    h += '</div></div>';
+
+    h += '<div class="row between light hint"><span>' + (sel === null ? '오늘 놓을 조각을 하나 골라요' : '놓을 칸을 눌러요. 숫자는 밤마다 더 버는 양') + '</span><span>' + (dw + 1) + '일째</span></div>';
+    h += '<div class="hand' + (s.hand.length > 3 ? ' four' : '') + '">';
+    s.hand.forEach(function (id, n) {
+      var p = ST.PIECES[id];
+      h += '<button class="card' + (sel === n ? ' sel' : '') + '" data-a="card" data-k="' + n + '">' + img(id, null, 16) + '<span class="nm">' + p.name + '</span><span class="cat">' + esc(p.daily) + '</span></button>';
+    });
+    h += '</div>';
+    h += '<div class="row acts"><button class="small" data-a="restart">처음부터</button>' +
+      '<span class="light" style="font-size:11px;flex:1;text-align:center">곡식 2개 = 빵 1개 · 금화 3개 = 빵 1개</span>' +
+      '<button class="small" data-a="drest">오늘은 쉬기</button></div>';
+    return h;
+  }
+
   // 보상 카드 한 장. state: pick 고를 수 있다, sel 골랐다, new 방금 받았다, had 전에 받았다, wait 별이 더 필요하다
   function rewardCard(q, i, state) {
     var rw = q.rewards[i], isP = !!rw.p, d = isP ? ST.PIECES[rw.p] : ST.RELICS[rw.r];
@@ -611,14 +756,15 @@
     else if (V.name === 'intro') h = vIntro();
     else if (V.name === 'pack') h = vPack();
     else if (V.name === 'build') h = vBuild();
+    else if (V.name === 'days') h = vDays();
     else if (V.name === 'result') h = vResult();
     else if (V.name === 'dex') h = vDex();
     else if (V.name === 'ending') h = vEnding();
-    app.className = 'v-' + V.name;
+    app.className = 'v-' + V.name + (V.name === 'days' && G ? ' ph-' + G.phase : '');
     app.innerHTML = h;
 
     // 방금 얻은 것을 칸 위에 잠깐 띄운다
-    if (V.name === 'build' && fx) {
+    if ((V.name === 'build' || (V.name === 'days' && G.phase === 'play')) && fx) {
       var cells = app.querySelectorAll('.cell');
       fx.parts.forEach(function (p) {
         var t = gainText(p.g);
@@ -653,6 +799,12 @@
   }
   // 새 판을 편다. 튜토리얼이면 손에 들어오는 순서를 정해 둔다.
   function newBoard(bag) {
+    if (Q.days) {
+      G = ST.days.newGame(Q, bag, draft.relics, (Date.now() % 100000) + 1);
+      tut = null; hist = []; sel = null; fx = null;
+      go('days');
+      return;
+    }
     G = ST.newGame(Q, bag, draft.relics, (Date.now() % 100000) + 1);
     tut = null;
     if (isTut()) {
@@ -683,7 +835,7 @@
   }
 
   function judge() {
-    var ev = ST.evaluate(G, Q);
+    var ev = Q.days ? ST.days.evaluate(G, Q) : ST.evaluate(G, Q);
     if (isTut()) {
       result = { tutres: true, ev: ev, first: tutDone() };
       go('result');
@@ -737,6 +889,22 @@
     story: function () { V.i = 0; render(); },
     newgame: function () { go('start', { i: 0 }); },
     tutorial: function () { startTut(); },
+    // 날짜 규칙
+    dcell: function (d) {
+      if (sel === null || !Q.days || G.phase !== 'play') return;
+      var i = +d.i;
+      if (!ST.days.place(G, sel, i)) return;
+      var parts = [], cells = G.last ? G.last.p.cells : {};
+      for (var c in cells) parts.push({ cell: +c, g: cells[c] });
+      fx = { cell: i, parts: parts };
+      sel = null; V.deck = false; render();
+    },
+    drest: function () { if (Q.days && G.phase === 'play') { ST.days.rest(G); sel = null; fx = null; render(); } },
+    dkopen: function () { V.deck = !V.deck; render(); },
+    evchoose: function (d) { ST.days.choose(G, ST.EVENTS[G.event].choices[+d.i]); render(); },
+    tomarket: function () { ST.days.toReward(G, Q.days.pool); render(); window.scrollTo(0, 0); },
+    rwtake: function (d) { ST.days.take(G, +d.i); sel = null; fx = null; render(); window.scrollTo(0, 0); },
+    rwreroll: function () { ST.days.reroll(G); render(); },
     tutskip: function () {
       if (!window.confirm('튜토리얼을 건너뛸까요? 선물(집 조각)은 그대로 받아요.')) return;
       tutDone(); Q = ST.QUESTS[0]; go('intro', { i: 0 });

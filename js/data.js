@@ -24,6 +24,22 @@
     plaza: { name: '광장', cat: '특수', desc: '옆 주거 건물마다 주민 1명 더. 나중에 놓는 것에도 적용', memo: '사람은 모일 데가 있어야 모여.' },
     bell: { name: '종탑', cat: '특수', desc: '놓는 순간 옆 건물을 전부 한 번 더 발동', memo: '종은 맨 나중에 달아. 먼저 달면 들을 사람이 없잖니.' }
   };
+  // 날짜 규칙에서 쓰는 조각 설명(건물이 매일 밤 일한다)
+  var DAILY = {
+    field: '밤마다 곡식 1개. 우물 옆이면 2개',
+    orchard: '밤마다 금화 1개. 옆에 빈 칸이 2개 넘게 있으면 2개',
+    fishing: '물가(강, 우물) 옆이면 밤마다 금화 2개',
+    bakery: '밤마다 옆 밭 하나마다 빵 1개',
+    mill: '밤마다 같은 가로줄의 밭 하나마다 곡식 1개',
+    brewery: '밤마다 옆 과수원 하나마다 금화 2개. 옆에 사람 사는 건물이 있어야 한다',
+    house: '주민 1명. 옆 집 하나마다 1명 더. 주민은 밤마다 금화 1개씩 낸다',
+    inn: '옆에 있는 서로 다른 건물 종류마다 주민 1명',
+    tower: '주민 3명. 옆에 사람 사는 건물이 있으면 1명',
+    well: '옆 밭이 밤마다 곡식을 2개씩 낸다',
+    plaza: '옆 주거 건물마다 주민 1명 더',
+    bell: '옆 건물이 밤마다 한 번 더 일한다'
+  };
+  for (var dk in DAILY) ST.PIECES[dk].daily = DAILY[dk];
   ST.PIECE_ORDER = ['field', 'orchard', 'fishing', 'bakery', 'mill', 'brewery', 'house', 'inn', 'tower', 'well', 'plaza', 'bell'];
   ST.DWELL = { house: 1, inn: 1, tower: 1 };
 
@@ -53,7 +69,11 @@
       lend: [], limit: 8,
       goals: [{ r: 'bread', n: 4 }],
       bonus: [{ r: 'bread', n: 6 }, { r: 'people', n: 3 }],
-      tip: '빵집부터 짓는 놈이 어디 있니. 밀이 있어야 빵을 굽지. 밭 먼저 놓고, 빵집은 그 옆에 나중에 놓는 거야.',
+      // 날짜 규칙: 닷새마다 장날. quota는 장날마다 가져가는 빵, pool은 장날 뒤에 고를 수 있는 조각,
+      // events는 주 중간에 생기는 일(아래 ST.EVENTS), bonus는 별을 더 받는 조건(left 끝났을 때 남은 빵, people 주민 수)
+      days: { perWeek: 5, quota: [5, 20, 45], pool: ['field', 'house', 'bakery', 'well', 'orchard', 'mill', 'inn', 'plaza', 'tower'],
+        events: ['parcel', 'donkey', 'neighbor', 'rain', 'peddler', 'crow'], bonus: [{ t: 'left', n: 25 }, { t: 'people', n: 6 }] },
+      tip: '건물은 매일 밤 일한다. 일찍 지을수록 오래 벌어. 빵집은 밭 사이에 끼워야 빵이 많이 나온다. 주민은 밤마다 금화를 내고, 금화 3개는 빵 1개 값이다.',
       win: ['밀이다! 우리 마을 밀이야!', '첫 빵은 두부 줄게요. 아니, 당신도 줄게요.'],
       fail: '빵이 모자라요. 저 또 옆 마을에 가야 하나요?',
       card: '잘했다. 처음치고는 말이야. 할미는 지금 유황 온천이다. 달걀을 삶아 먹었는데 네 설계보다 훨씬 잘 익었더라.',
@@ -139,7 +159,7 @@
   // 그 의뢰에서 처음 배우는 것(lesson. at은 훈수가 뜨는 자리: pack 짐 싸기, relic 유물 칸)
   var MORE = {
     q1: {
-      ask: '빵을 4개만 구울 수 있게 해 주세요!',
+      ask: '닷새마다 장날이에요. 장날마다 빵을 가지러 올게요!',
       arrive: '언덕을 내려가니 빵 굽는 냄새가 난다. 그런데 밭이 하나도 안 보인다. 빵집 앞에서 누가 이쪽을 빤히 보고 있다.', arriveArt: ['bakery'],
       bio: '빵집을 연 지 3년. 밀가루는 아직도 옆 마을에서 꾸어 쓴다.',
       note: '밀순이 빵 솜씨는 이 골짜기 으뜸이다. 그런데 계획이란 걸 세워 본 적이 없는 애야. 네가 좀 도와줘라.',
@@ -265,6 +285,27 @@
     key: { T: 'tree', p: 'pine', '~': 'water', f: 'field', w: 'well', o: 'orchard', m: 'mill', b: 'bakery', h: 'house', g: 'fishing', P: 'plaza', i: 'inn', B: 'bell', t: 'tower' },
     walk: [5, 1, 2.1],
     tagline: '빈 땅에 조각을 놓아 마을을 짓는 퍼즐'
+  };
+
+  // 날짜 규칙의 이벤트. choices의 cost는 내는 것(모자라면 못 고름), lose는 잃는 것(있는 만큼만), give는 받는 것, card는 오늘 손에 들어오는 조각.
+  ST.EVENTS = {
+    parcel: { art: ['grandma'], title: '할머니의 소포', text: '온천에서 소포가 왔다. 쪽지에는 "둘 중 하나만 가져라. 욕심내면 두부 준다."',
+      choices: [{ label: '곡식 자루', note: '곡식 4개', give: { grain: 4 } }, { label: '동전 주머니', note: '금화 3개', give: { gold: 3 } }] },
+    donkey: { art: ['donkey'], title: '두부의 간식 시간', text: '두부가 곡식 자루에 머리를 박고 있다. 꼬리가 신났다.',
+      choices: [{ label: '당근으로 달랜다', note: '금화 1개', cost: { gold: 1 } }, { label: '그냥 둔다', note: '곡식 2개 잃음', lose: { grain: 2 } }] },
+    neighbor: { art: ['hero'], title: '빵 냄새를 맡고 온 손님', text: '옆 마을 사람이 코를 킁킁거리며 찾아왔다. "그 빵, 저한테도 파시죠?"',
+      choices: [{ label: '빵을 판다', note: '빵 2개 → 금화 8개', cost: { bread: 2 }, give: { gold: 8 } }, { label: '인사만 한다', note: '아무 일 없음' }] },
+    rain: { art: ['field'], piece: true, title: '밤새 내린 비', text: '아침에 보니 밭이 반짝반짝하다. 비가 일을 대신 해 줬다.',
+      choices: [{ label: '좋았어!', note: '곡식 3개', give: { grain: 3 } }] },
+    peddler: { art: ['donkey', 'crate'], title: '떠돌이 상인', text: '수레를 끈 상인이 지나간다. "방앗간 조각 있어요. 오늘만 금화 3개!"',
+      choices: [{ label: '산다', note: '금화 3개 → 오늘 손에 방앗간', cost: { gold: 3 }, card: 'mill' }, { label: '구경만 한다', note: '아무 일 없음' }] },
+    crow: { art: ['pine'], piece: true, title: '까마귀 떼', text: '까마귀 떼가 밭 위를 빙빙 돈다. 눈빛이 수상하다.',
+      choices: [{ label: '빵을 던져 쫓는다', note: '빵 1개', cost: { bread: 1 } }, { label: '소리만 지른다', note: '곡식 3개 잃음', lose: { grain: 3 } }] }
+  };
+  ST.daysGoalText = function (g) {
+    if (g.t === 'left') return '다 끝났을 때 빵 ' + g.n + '개 넘게 남기기';
+    if (g.t === 'people') return '주민 ' + g.n + '명 넘기기';
+    return '';
   };
 
   ST.TEXT = {

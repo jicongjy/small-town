@@ -20,7 +20,15 @@
   function load() {
     try {
       var s = JSON.parse(localStorage.getItem(KEY));
-      if (s && s.coll) return s;
+      if (s && s.coll) {
+        // 연습판이 따로 생기기 전의 저장: 연습은 한 것으로 치고, 연습 선물을 넣어 준다
+        if (s.tut === undefined) {
+          s.tut = true;
+          ST.TUTOR.quest.rewards.forEach(function (rw) { if (rw.p) s.coll[rw.p] = (s.coll[rw.p] || 0) + 1; });
+          try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {}
+        }
+        return s;
+      }
     } catch (e) {}
     return null;
   }
@@ -30,7 +38,7 @@
   function fresh(name) {
     var coll = {};
     for (var k in ST.START) coll[k] = ST.START[k];
-    return { name: name, coll: coll, relics: [], stars: {}, picks: {}, eq: [], bags: {}, ended: false };
+    return { name: name, coll: coll, relics: [], stars: {}, picks: {}, eq: [], bags: {}, ended: false, tut: false };
   }
   function esc(s) {
     return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
@@ -160,7 +168,8 @@
     });
     h += '</div></div>';
     h += '<div class="center">' + (save.ended ? '<button class="ghost small" data-a="ending">노트 맨 뒷장</button>' : '') +
-      '<button class="ghost small" data-a="reset">처음부터 다시 하기</button></div>';
+      '<button class="ghost small" data-a="tutorial">연습 다시</button>' +
+      '<button class="ghost small" data-a="reset">처음부터 다시</button></div>';
     return h;
   }
 
@@ -188,7 +197,7 @@
     q.intro.forEach(function (l) { cuts.push({ kind: 'say', text: l }); });
     return cuts;
   }
-  function isTut() { return Q && Q.id === 'q1' && !(save.stars.q1 > 0); }
+  function isTut() { return Q === ST.TUTOR.quest; }
   function lesson(q, at) {
     if (!q.lesson || q.lesson.at !== at || (save.stars[q.id] || 0) > 0) return '';
     return noteMemo('할머니의 훈수', q.lesson.text);
@@ -231,8 +240,7 @@
     h += rewardPreview(q);
     if (q.lend.length) h += '<div class="panel">' + lendHtml(q) + '</div>';
     h += '<div class="row"><button data-a="map">지도로</button><button data-a="story">이야기 다시 보기</button>' +
-      (isTut() ? '<button class="primary" style="flex:1" data-a="tutgo">밀순이네 땅으로</button>'
-        : '<button class="primary" style="flex:1" data-a="pack">짐 싸기</button>') + '</div>';
+      '<button class="primary" style="flex:1" data-a="pack">짐 싸기</button></div>';
     return h;
   }
 
@@ -354,7 +362,7 @@
 
     h += '<div class="row between"><div class="light bt">' + esc(q.who) + ' · ' + esc(q.title) + '</div>' +
       '<span class="row" style="gap:6px">' + (ts ? '' : '<button class="small" data-a="tip">메모</button>') +
-      '<button class="small" data-a="quit">그만두기</button></span></div>';
+      (isTut() && !save.tut ? '<button class="small" data-a="tutskip">연습 건너뛰기</button>' : '<button class="small" data-a="quit">그만두기</button>') + '</span></div>';
 
     h += coach(ts);
     if (!ts && V.tip) h += '<div class="memo"><b>할머니의 메모</b>' + esc(q.tip) + '</div>';
@@ -414,7 +422,7 @@
       h += '</div>';
     } else {
       h += '<div class="panel center fin"><p>' + (stuck ? '더 놓을 수 있는 칸이 없다.' : '조각을 다 놓았다.') + '</p>' +
-        '<button class="primary wide" data-a="judge">의뢰인에게 보여 주기</button></div>';
+        '<button class="primary wide" data-a="judge">' + (isTut() ? '연습 끝내기' : '의뢰인에게 보여 주기') + '</button></div>';
     }
 
     h += '<div class="row acts"><button class="small" data-a="undo"' + (hist.length ? '' : ' disabled') + '>되돌리기</button>' +
@@ -450,6 +458,20 @@
   // 결과. 한 쪽에 하나씩 보여 준다: 의뢰 완료 → 온천에서 온 엽서 → 노트에 드러난 글 → 딸려 온 상자
   function vResult() {
     var q = Q, r = result, h = '', n = ST.QUESTS.indexOf(q) + 1;
+    if (r.tutres) {
+      // 연습판을 끝낸 뒤: 별이나 엽서 없이, 할머니의 한마디와 선물만
+      h += '<div class="banner"><div class="light sm">할머니 집 마당</div><h1 class="light">연습 끝</h1></div>';
+      h += '<div class="panel tight">' + goalsHtml(q, G) + '</div>';
+      h += noteMemo('노트 첫 장 · 할머니 글씨', r.first ? ST.TUTOR.end : '연습은 몇 번을 해도 된다. 선물은 한 번만 준다.');
+      if (r.first) {
+        h += '<div class="panel giftbox"><div class="gb-top"><p>연습을 끝내서 받았다.</p></div><div class="gifts one">';
+        q.rewards.forEach(function (_, i) { h += rewardCard(q, i, 'new'); });
+        h += '</div></div>';
+      }
+      h += '<div class="row" style="margin-top:auto"><button data-a="restart">다시 연습</button>' +
+        '<button class="primary" style="flex:1" data-a="tutout">' + (r.first ? '첫 의뢰로' : '마을로 돌아가기') + '</button></div>';
+      return h;
+    }
     if (!r.ev.base) {
       h += '<div class="panel"><div class="row" style="gap:12px">' + portrait(q) + '<div><div class="muted">' + esc(q.who) + '</div><p>' + esc(q.fail) + '</p></div></div>' +
         '<div class="gap"></div>' + goalsHtml(q, G) + '</div>';
@@ -470,7 +492,6 @@
       q.win.forEach(function (l) { h += '<p class="bubble">' + esc(l) + '</p>'; });
       h += '</div></div>';
       h += '<div class="panel tight">' + goalsHtml(q, G) + '</div>';
-      if (r.tut && r.ev.stars < 3) h += noteMemo('노트 첫 장 · 할머니 글씨', ST.TUTOR.end);
     } else if (pg === 'card') {
       h += '<div class="light center lead">온천에서 엽서가 왔다</div>';
       h += '<div class="pcard"><div class="pc-pic">' + img('steam', null, null, 'st') + '<span class="tub">' + img('grandma') + '</span></div>' +
@@ -591,9 +612,29 @@
     go('build');
   }
 
+  // 연습을 끝냈다(건너뛰어도 같다). 선물은 처음 한 번만 준다
+  function tutDone() {
+    if (save.tut) return false;
+    save.tut = true;
+    ST.TUTOR.quest.rewards.forEach(function (rw) { if (rw.p) save.coll[rw.p] = (save.coll[rw.p] || 0) + 1; });
+    persist();
+    return true;
+  }
+  function startTut() {
+    Q = ST.TUTOR.quest;
+    draft = { bag: {}, relics: [] };
+    ST.TUTOR.order.forEach(function (id) { draft.bag[id] = (draft.bag[id] || 0) + 1; });
+    newBoard(ST.TUTOR.order.slice());
+  }
+
   function judge() {
     var ev = ST.evaluate(G, Q);
-    var r = { ev: ev, first: false, got: [], left: [], toPick: 0, tut: !!tut && isTut(), sel: [], before: [], gift: false, grew: false };
+    if (isTut()) {
+      result = { tutres: true, ev: ev, first: tutDone() };
+      go('result');
+      return;
+    }
+    var r = { ev: ev, first: false, got: [], left: [], toPick: 0, sel: [], before: [], gift: false, grew: false };
     if (ev.base) {
       var prev = save.stars[Q.id] || 0;
       r.first = prev === 0;
@@ -630,7 +671,7 @@
     begin: function () {
       var v = (document.getElementById('nm').value || '').trim() || '손주';
       save = fresh(v); persist();
-      Q = ST.QUESTS[0]; go('intro', { i: 0 });
+      startTut();
     },
     pronext: function () { V.i = Math.min(V.i + 1, ST.TEXT.prologue.length - 1); render(); window.scrollTo(0, 0); },
     proback: function () { V.i = Math.max(V.i - 1, 0); render(); },
@@ -639,7 +680,14 @@
     introback: function () { V.i = Math.max(V.i - 1, 0); render(); },
     introskip: function () { V.i = introCuts(Q).length; render(); },
     story: function () { V.i = 0; render(); },
-    tutgo: function () { makeDraft(); startGame(); },
+    tutorial: function () { startTut(); },
+    tutskip: function () {
+      if (!window.confirm('연습을 건너뛸까요? 선물(집 조각)은 그대로 받습니다.')) return;
+      tutDone(); Q = ST.QUESTS[0]; go('intro', { i: 0 });
+    },
+    tutout: function () {
+      if (result && result.first) { Q = ST.QUESTS[0]; go('intro', { i: 0 }); } else go('map');
+    },
     ending: function () { go('ending'); },
     tip: function () { V.tip = !V.tip; render(); },
     pinfo: function (d) { V.info = V.info === d.id ? null : d.id; render(); },

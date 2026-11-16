@@ -446,3 +446,6 @@ img.scnp { width: 56px; height: 56px; background: #2f9e7f; border: 2px solid var
 @keyframes enter { 0% { transform: translateY(40px) scale(0.6); opacity: 0; } 70% { transform: translateY(-6px) scale(1.06); opacity: 1; } 100% { transform: none; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .qc-no, .qc-title, .qc-who, .qc-note, .qc-ray { animation: none; } }
+
+.gifts.one { grid-template-columns: minmax(0, 150px); justify-content: center; }
+.gifts.one .gift { min-height: 0; }

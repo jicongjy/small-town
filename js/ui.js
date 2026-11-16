@@ -74,20 +74,22 @@
       (star ? img('star', null, null, 'gs') : '') + '<span>' + esc(ST.goalText(g)) + extra + '</span></div>';
   }
   // 의뢰 조건을 그림 카드로 크게 보여 준다(의뢰 조건 화면용). 기본 조건과 별이 붙는 추가 목표를 나눈다
-  function goalTile(g, star) {
-    var h = '<div class="gt' + (star ? ' star' : '') + '">' + (star ? '<span class="badge">' + img('star') + '+1</span>' : '');
-    if (g.r) h += img(ST.RES[g.r].icon, null, null, 'gi') + '<span class="num">' + g.n + '</span><span class="lbl">' + ST.RES[g.r].name + ' ' + g.n + ' 이상</span>';
-    else if (g.t === 'adj') h += '<span class="pair">' + img(g.a, null, 16) + img(g.b, null, 16) + '</span><span class="lbl">' + esc(ST.goalText(g)) + '</span>';
-    else h += '<span class="pair">' + img('i_people') + '<b>=</b>' + img('i_people') + '</span><span class="lbl">' + esc(ST.goalText(g)) + '</span>';
+  // 의뢰 조건 화면용. 꼭 할 일은 큰 그림 카드로, 별을 더 받는 일은 작은 딱지로 보여 준다
+  function goalTile(g) {
+    var h = '<div class="gt">';
+    if (g.r) h += img(ST.RES[g.r].icon, null, null, 'gi') + '<span class="num">' + g.n + '<small>' + ST.RES[g.r].unit + '</small></span><span class="lbl">' + ST.RES[g.r].name + '</span>';
+    else h += '<span class="pair">' + img('i_people') + '<b>=</b>' + img('i_people') + '</span><span class="lbl">양쪽 주민<br>똑같이</span>';
     return h + '</div>';
   }
+  function bonusChip(g) {
+    return '<span class="bchip">' + img('star') + (g.r ? img(ST.RES[g.r].icon, null, null, 'bi') + ST.RES[g.r].name + ' ' + g.n + ST.RES[g.r].unit : esc(ST.goalText(g))) + '</span>';
+  }
   function goalTiles(q) {
-    var wide = q.goals.length + q.bonus.length > 4;
-    var h = '<div class="gsecs' + (wide ? ' stack' : '') + '"><div class="gsec" style="flex:' + q.goals.length + '"><div class="ghead"><b>꼭 채워야 해요</b><span>다 채우면 ' + img('star', null, null, 'gs') + '1개</span></div><div class="gts">';
-    q.goals.forEach(function (g) { h += goalTile(g, false); });
-    h += '</div></div><div class="gsec" style="flex:' + q.bonus.length + '"><div class="ghead"><b>더 하면 좋아요</b><span>하나마다 ' + img('star', null, null, 'gs') + '1개 더</span></div><div class="gts">';
-    q.bonus.forEach(function (g) { h += goalTile(g, true); });
-    return h + '</div></div></div>';
+    var h = '<div class="todo"><div class="todo-h">해야 할 일</div><div class="gts n' + q.goals.length + '">';
+    q.goals.forEach(function (g) { h += goalTile(g); });
+    h += '</div></div><div class="more"><div class="todo-h">여유가 되면 <small>하나 할 때마다 별 1개 더!</small></div><div class="bchips">';
+    q.bonus.forEach(function (g) { h += bonusChip(g); });
+    return h + '</div></div>';
   }
   function goalsHtml(q, s) {
     var h = '';
@@ -137,7 +139,8 @@
     var h = '<div class="row between"><h1 class="light">' + ST.TEXT.title + '</h1>' +
       (c.name ? '' : '<button class="ghost small" data-a="proskip">건너뛰기</button>') + '</div><div class="gap"></div>';
     if (c.letter) {
-      h += '<div class="postcard scene"><p>' + esc(c.text) + '</p><div class="from">' + esc(c.from) + '</div></div><div class="gap"></div>';
+      h += '<div class="desk"><div class="sticky"><span class="pin"></span><p>' + esc(c.text) + '</p><div class="from">' + esc(c.from) + '</div></div>' +
+        '<div class="deskitems">' + img('note', null, null, 'di') + img('r_pencil', null, null, 'di') + '</div></div>';
     } else {
       h += '<div class="panel scene">' + cutArt(c) + '<p>' + esc(c.text) + '</p></div>';
     }
@@ -274,12 +277,9 @@
       h += cutNav(i, cuts.length, 'introback', 'intronext', i === cuts.length - 1 ? '의뢰 조건 보기' : (c.kind === 'card' ? '의뢰 듣기' : '다음'));
       return h;
     }
-    h += '<div class="panel"><div class="row" style="gap:12px">' + portrait(q) +
-      '<div><div class="muted">' + esc(q.who) + '</div><h2>' + esc(q.title) + '</h2></div></div>' +
-      '<div class="gap"></div>' + goalTiles(q) +
-      (q.ruleText ? '<div class="rule">특별 규칙: ' + esc(q.ruleText) + '</div>' : '') + lendHtml(q) + '</div>';
-    h += lesson(q, 'rule');
-    h += rewardPreview(q);
+    h += '<div class="panel cond"><div class="ask"><div class="who">' + portrait(q) + '<span>' + esc(q.who) + '</span></div>' +
+      '<p class="bubble">' + esc(q.ask) + '</p></div>' + goalTiles(q) +
+      (q.ruleText ? '<div class="rule"><b>이 땅의 규칙</b>' + esc(q.ruleText) + '</div>' : '') + lendHtml(q) + '</div>';
     h += '<div class="row"><button data-a="map">지도로</button><button data-a="story">이야기 다시 보기</button>' +
       '<button class="primary" style="flex:1" data-a="pack">짐 싸기</button></div>';
     return h;
@@ -440,7 +440,7 @@
     ST.RES_ORDER.forEach(function (r) {
       var t = target[r], met = t && s.res[r] >= t;
       h += '<div><span class="lb">' + ST.RES[r].name + '</span><span class="vl">' + img(ST.RES[r].icon) +
-        '<span class="' + (met ? 'met' : '') + '">' + s.res[r] + '</span>' + (t ? '<small>/ ' + t + '</small>' : '') + '</span></div>';
+        '<span class="' + (met ? 'met' : '') + '">' + s.res[r] + '</span>' + (t ? '<small>/ ' + t + ST.RES[r].unit + '</small>' : '') + '</span></div>';
     });
     h += '</div>';
 
@@ -509,18 +509,6 @@
       '<span class="nm">' + d.name + '</span><span class="ds">' + esc(d.desc) + '</span>' +
       (tag ? '<span class="tagline">' + tag + '</span>' : '') + '</' + (can ? 'button' : 'div') + '>';
   }
-  // 의뢰 조건 화면에 미리 보여 주는 보상
-  function rewardPreview(q) {
-    var picked = save.picks[q.id] || [];
-    var h = '<div class="panel prev"><h2>할머니의 선물 상자</h2>' +
-      '<p>의뢰를 끝내면 할머니가 온천에서 선물 상자를 보내 줘요. 받은 별 1개마다 하나씩 골라 가져요.</p><div class="prevrow">';
-    q.rewards.forEach(function (rw, i) {
-      var isP = !!rw.p, d = isP ? ST.PIECES[rw.p] : ST.RELICS[rw.r], had = picked.indexOf(i) >= 0;
-      h += '<span class="pv3' + (had ? ' had' : '') + '">' + (isP ? img(rw.p, null, 16) : img(d.sprite)) + '<span>' + d.name + (had ? '<br><small>받음</small>' : '') + '</span></span>';
-    });
-    return h + '</div></div>';
-  }
-
   // 결과. 한 쪽에 하나씩 보여 준다: 의뢰 완료 → 온천에서 온 엽서 → 노트에 드러난 글 → 딸려 온 상자
   function vResult() {
     var q = Q, r = result, h = '', n = ST.QUESTS.indexOf(q) + 1;
@@ -566,7 +554,7 @@
     } else if (pg === 'note') {
       h += '<div class="light center lead">노트에 글씨가 드러났어요</div>';
       h += '<div class="notebook"><div class="nb-head"><span>할머니의 노트</span><span>' + n + ' / ' + ST.QUESTS.length + ' 장</span></div>' +
-        '<div class="nb-who">' + portrait(q) + '<div><b>' + esc(q.who) + '</b><span class="hand">' + esc(q.note) + '</span></div></div>' +
+        '<div class="nb-who">' + portrait(q) + '<div><b>' + esc(q.who) + '</b><span>' + esc(q.note) + '</span></div></div>' +
         '<div class="nb-new"><em>새로 드러난 글</em><p>' + esc(q.reveal) + '</p></div></div>';
     } else {
       var had = r.before, choosing = r.toPick > 0;

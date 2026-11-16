@@ -606,3 +606,8 @@ button.big { min-height: 54px; font-size: 18px; }
 .gsecs:not(.stack) .gt img.gi { width: 36px; height: 36px; }
 .gsecs:not(.stack) .gt .num { font-size: 28px; }
 @media (max-height: 600px) { .gsecs:not(.stack) .gt { padding: 8px 2px 5px; } .gsecs:not(.stack) .gt img.gi { width: 26px; height: 26px; } .gsecs:not(.stack) .gt .num { font-size: 20px; } }
+@media (max-height: 600px) {
+  .notebook { line-height: 22px; background: repeating-linear-gradient(#fdf6e3 0 21px, #d8cdb0 21px 22px); }
+  .nb-who { margin: 8px 0; } .nb-who .hand { font-size: 16px; } .nb-who .portrait img { width: 30px; }
+  .nb-new p { font-size: 18px; }
+}

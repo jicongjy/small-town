@@ -73,6 +73,22 @@
     return '<div class="goal' + (done ? ' done' : '') + '"><span class="box"></span>' +
       (star ? img('star', null, null, 'gs') : '') + '<span>' + esc(ST.goalText(g)) + extra + '</span></div>';
   }
+  // 의뢰 조건을 그림 카드로 크게 보여 준다(의뢰 조건 화면용). 기본 조건과 별이 붙는 추가 목표를 나눈다
+  function goalTile(g, star) {
+    var h = '<div class="gt' + (star ? ' star' : '') + '">' + (star ? '<span class="badge">' + img('star') + '+1</span>' : '');
+    if (g.r) h += img(ST.RES[g.r].icon, null, null, 'gi') + '<span class="num">' + g.n + '</span><span class="lbl">' + ST.RES[g.r].name + ' ' + g.n + ' 이상</span>';
+    else if (g.t === 'adj') h += '<span class="pair">' + img(g.a, null, 16) + img(g.b, null, 16) + '</span><span class="lbl">' + esc(ST.goalText(g)) + '</span>';
+    else h += '<span class="pair">' + img('i_people') + '<b>=</b>' + img('i_people') + '</span><span class="lbl">' + esc(ST.goalText(g)) + '</span>';
+    return h + '</div>';
+  }
+  function goalTiles(q) {
+    var wide = q.goals.length + q.bonus.length > 4;
+    var h = '<div class="gsecs' + (wide ? ' stack' : '') + '"><div class="gsec" style="flex:' + q.goals.length + '"><div class="ghead"><b>꼭 채워야 해요</b><span>다 채우면 ' + img('star', null, null, 'gs') + '1개</span></div><div class="gts">';
+    q.goals.forEach(function (g) { h += goalTile(g, false); });
+    h += '</div></div><div class="gsec" style="flex:' + q.bonus.length + '"><div class="ghead"><b>더 하면 좋아요</b><span>하나마다 ' + img('star', null, null, 'gs') + '1개 더</span></div><div class="gts">';
+    q.bonus.forEach(function (g) { h += goalTile(g, true); });
+    return h + '</div></div></div>';
+  }
   function goalsHtml(q, s) {
     var h = '';
     q.goals.forEach(function (g) { h += goalLine(g, s, false); });
@@ -251,7 +267,7 @@
           '<span class="qc-ray"></span><span class="qc-who' + (q.portraits.length > 1 ? ' two' : '') + '">' + q.portraits.map(function (pt) { return img(pt); }).join('') + '</span></div>' +
           '<div class="qc-name"><small>의뢰인</small>' + esc(q.who) + '</div>' +
           '<p class="qc-bio">' + esc(q.bio) + '</p>' +
-          '<div class="qc-note"><b>할머니의 노트</b>' + esc(q.note) + '</div></div>';
+          '<div class="qc-note">' + img('grandma', null, null, 'gm') + '<p>' + esc(q.note) + '</p><span class="sig">할미가</span></div></div>';
       } else {
         h += '<div class="panel scene"><div class="tag">' + esc(q.who) + '</div><div class="art">' + portrait(q) + '</div><p>' + esc(c.text) + '</p></div>';
       }
@@ -260,12 +276,10 @@
     }
     h += '<div class="panel"><div class="row" style="gap:12px">' + portrait(q) +
       '<div><div class="muted">' + esc(q.who) + '</div><h2>' + esc(q.title) + '</h2></div></div>' +
-      '<div class="gap"></div><h2>의뢰 조건</h2><div class="gap" style="height:6px"></div>' + goalsHtml(q, null) +
-      '<p class="muted" style="margin-top:6px">별이 붙은 조건은 추가 목표예요.</p>' +
-      (q.ruleText ? '<div class="rule">특별 규칙: ' + esc(q.ruleText) + '</div>' : '') + '</div>';
+      '<div class="gap"></div>' + goalTiles(q) +
+      (q.ruleText ? '<div class="rule">특별 규칙: ' + esc(q.ruleText) + '</div>' : '') + lendHtml(q) + '</div>';
     h += lesson(q, 'rule');
     h += rewardPreview(q);
-    if (q.lend.length) h += '<div class="panel">' + lendHtml(q) + '</div>';
     h += '<div class="row"><button data-a="map">지도로</button><button data-a="story">이야기 다시 보기</button>' +
       '<button class="primary" style="flex:1" data-a="pack">짐 싸기</button></div>';
     return h;
@@ -499,9 +513,7 @@
   function rewardPreview(q) {
     var picked = save.picks[q.id] || [];
     var h = '<div class="panel prev"><h2>할머니의 선물 상자</h2>' +
-      '<p>의뢰를 끝내면 할머니가 온천에서 엽서랑 선물 상자를 보내 줘요. 받은 별만큼 골라 가질 수 있어요.</p>' +
-      '<div class="starrule"><span>' + img('star') + ' 1개<b>선물 1개</b></span><span>' + img('star') + img('star') + ' 2개<b>선물 2개</b></span><span>' + img('star') + img('star') + img('star') + ' 3개<b>전부</b></span></div>' +
-      '<p class="muted">별은 기본 조건을 채우면 1개, 별 붙은 추가 목표 하나마다 1개씩 더 받아요.</p><div class="prevrow">';
+      '<p>의뢰를 끝내면 할머니가 온천에서 선물 상자를 보내 줘요. 받은 별 1개마다 하나씩 골라 가져요.</p><div class="prevrow">';
     q.rewards.forEach(function (rw, i) {
       var isP = !!rw.p, d = isP ? ST.PIECES[rw.p] : ST.RELICS[rw.r], had = picked.indexOf(i) >= 0;
       h += '<span class="pv3' + (had ? ' had' : '') + '">' + (isP ? img(rw.p, null, 16) : img(d.sprite)) + '<span>' + d.name + (had ? '<br><small>받음</small>' : '') + '</span></span>';
@@ -554,7 +566,7 @@
     } else if (pg === 'note') {
       h += '<div class="light center lead">노트에 글씨가 드러났어요</div>';
       h += '<div class="notebook"><div class="nb-head"><span>할머니의 노트</span><span>' + n + ' / ' + ST.QUESTS.length + ' 장</span></div>' +
-        '<div class="nb-who">' + portrait(q) + '<div><b>' + esc(q.who) + '</b><span>' + esc(q.note) + '</span></div></div>' +
+        '<div class="nb-who">' + portrait(q) + '<div><b>' + esc(q.who) + '</b><span class="hand">' + esc(q.note) + '</span></div></div>' +
         '<div class="nb-new"><em>새로 드러난 글</em><p>' + esc(q.reveal) + '</p></div></div>';
     } else {
       var had = r.before, choosing = r.toPick > 0;

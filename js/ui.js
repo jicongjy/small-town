@@ -517,7 +517,7 @@
   // ───── 날짜 규칙의 짓기 화면 ─────
   function deltaText(g) {
     var out = [];
-    ST.RES_ORDER.forEach(function (r) { if (g[r]) out.push(ST.RES[r].name + (g[r] > 0 ? '+' : '') + g[r]); });
+    ST.RES_ORDER.forEach(function (r) { if (g[r]) out.push('<span class="dv">' + img(ST.RES[r].icon) + (g[r] > 0 ? '+' : '') + g[r] + '</span>'); });
     return out;
   }
   function daysTip(s) {
@@ -529,6 +529,22 @@
     else if (s.day === 3) t = '닷새째가 장날이야. 밀순이가 빵을 가져간다. 빵이 모자라면 곡식 2개나 금화 3개가 빵 1개로 쳐진다.';
     else return '';
     return noteMemo('', t);
+  }
+  // 카드 겉면의 한 줄 요약: 조건(작은 글) + 아이콘과 숫자
+  function tagHtml(id) {
+    var t = ST.PIECES[id].tag;
+    if (!t) return '';
+    return '<span class="tag2">' + (t.when ? '<small>' + esc(t.when) + '</small>' : '') +
+      '<b>' + (t.res ? img(ST.RES[t.res].icon) + t.n : esc(t.text)) + '</b></span>';
+  }
+  // 꾹 눌렀을 때 뜨는 자세한 설명
+  function detailHtml(id) {
+    var p = ST.PIECES[id];
+    return '<div class="sheet" data-a="detailclose"><div class="sheet-in"><div class="row" style="gap:12px;align-items:flex-start">' +
+      '<span class="portrait">' + img(id, null, 16) + '</span><div><h2>' + p.name + ' <small class="muted">' + p.cat + '</small></h2>' + tagHtml(id) + '</div></div>' +
+      '<p class="full">' + esc(Q && Q.days ? p.daily : p.desc) + '</p>' +
+      '<div class="memo" style="margin:0"><b>할머니의 메모</b>' + esc(p.memo) + '</div>' +
+      '<button class="primary wide" data-a="detailclose">닫기</button></div></div>';
   }
   function vDays() {
     var q = Q, s = G, D = ST.days, h = '', i;
@@ -563,10 +579,10 @@
     }
     if (s.phase === 'reward') {
       h += '<div class="light center lead">장날 선물: 조각 하나를 덱에 넣어요</div>';
-      h += '<div class="panel giftbox"><div class="gb-top"><p>이번 의뢰 동안 쓸 수 있어요. 고르면 며칠 안에 손에 들어와요.</p></div><div class="gifts">';
+      h += '<div class="panel giftbox"><div class="gb-top"><p>이번 의뢰 동안 쓸 수 있어요. 꾹 누르면 설명이 나와요.</p></div><div class="gifts">';
       s.offer.forEach(function (id, n) {
         var p = ST.PIECES[id];
-        h += '<button class="gift pick" data-a="rwtake" data-i="' + n + '"><span class="kind">조각</span><span class="pic">' + img(id, null, 16) + '</span><span class="nm">' + p.name + '</span><span class="ds">' + esc(p.daily) + '</span></button>';
+        h += '<button class="gift pick" data-a="rwtake" data-i="' + n + '" data-hold="' + id + '"><span class="kind">조각</span><span class="pic">' + img(id, null, 16) + '</span><span class="nm">' + p.name + '</span>' + tagHtml(id) + '</button>';
       });
       h += '</div></div>';
       var canRe = s.rerolls < D.REROLL_MAX && s.res.gold >= D.REROLL_COST;
@@ -622,7 +638,7 @@
           if (pv) {
             var dt = deltaText(pv);
             cls += (c ? ' swap' : ' can') + (pv.rate > 0 ? ' good' : (pv.rate < 0 ? ' bad' : ''));
-            inner += '<span class="pv">' + (dt.length ? dt.join('<br>') : (c ? '바꾸기' : '0')) + '</span>';
+            inner += '<span class="pv">' + (dt.length ? dt.join('') : (c ? '바꾸기' : '')) + '</span>';
           } else cls += ' cannot';
         }
       }
@@ -630,11 +646,11 @@
     }
     h += '</div></div>';
 
-    h += '<div class="row between light hint"><span>' + (sel === null ? '오늘 놓을 조각을 하나 골라요' : '놓을 칸을 눌러요. 숫자는 밤마다 더 버는 양') + '</span><span>' + (dw + 1) + '일째</span></div>';
+    h += '<div class="row between light hint"><span>' + (sel === null ? '조각을 하나 골라요 · 꾹 누르면 설명' : '놓을 칸을 눌러요. 숫자는 밤마다 더 버는 양') + '</span><span>' + (dw + 1) + '일째</span></div>';
     h += '<div class="hand' + (s.hand.length > 3 ? ' four' : '') + '">';
     s.hand.forEach(function (id, n) {
       var p = ST.PIECES[id];
-      h += '<button class="card' + (sel === n ? ' sel' : '') + '" data-a="card" data-k="' + n + '">' + img(id, null, 16) + '<span class="nm">' + p.name + '</span><span class="cat">' + esc(p.daily) + '</span></button>';
+      h += '<button class="card' + (sel === n ? ' sel' : '') + '" data-a="card" data-k="' + n + '" data-hold="' + id + '">' + img(id, null, 16) + '<span class="nm">' + p.name + '</span>' + tagHtml(id) + '</button>';
     });
     h += '</div>';
     h += '<div class="row acts"><button class="small" data-a="restart">처음부터</button>' +
@@ -761,6 +777,7 @@
     else if (V.name === 'dex') h = vDex();
     else if (V.name === 'ending') h = vEnding();
     app.className = 'v-' + V.name + (V.name === 'days' && G ? ' ph-' + G.phase : '');
+    if (V.detail) h += detailHtml(V.detail);
     app.innerHTML = h;
 
     // 방금 얻은 것을 칸 위에 잠깐 띄운다
@@ -901,6 +918,7 @@
     },
     drest: function () { if (Q.days && G.phase === 'play') { ST.days.rest(G); sel = null; fx = null; render(); } },
     dkopen: function () { V.deck = !V.deck; render(); },
+    detailclose: function () { V.detail = null; render(); },
     evchoose: function (d) { ST.days.choose(G, ST.EVENTS[G.event].choices[+d.i]); render(); },
     tomarket: function () { ST.days.toReward(G, Q.days.pool); render(); window.scrollTo(0, 0); },
     rwtake: function (d) { ST.days.take(G, +d.i); sel = null; fx = null; render(); window.scrollTo(0, 0); },
@@ -1013,7 +1031,22 @@
     mapnew: function () { go('map', result && result.grew ? { fresh: Q.id } : null); }
   };
 
+  // 꾹 누르면(0.45초) 조각 설명이 뜬다. 그때 따라오는 누르기는 무시한다
+  var holdTimer = null, held = false;
+  function holdCancel() { if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; } }
+  app.addEventListener('pointerdown', function (e) {
+    var t = e.target.closest('[data-hold]');
+    held = false; holdCancel();
+    if (!t) return;
+    var id = t.dataset.hold;
+    holdTimer = setTimeout(function () { holdTimer = null; held = true; V.detail = id; render(); }, 450);
+  });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (n) { app.addEventListener(n, holdCancel, true); });
+  app.addEventListener('pointermove', function (e) { if (holdTimer && (Math.abs(e.movementX) > 6 || Math.abs(e.movementY) > 6)) holdCancel(); });
+  app.addEventListener('contextmenu', function (e) { if (e.target.closest('[data-hold]')) e.preventDefault(); });
+
   app.addEventListener('click', function (e) {
+    if (held) { held = false; return; }
     var t = e.target.closest('[data-a]');
     if (!t || t.disabled) return;
     var f = ACT[t.dataset.a];

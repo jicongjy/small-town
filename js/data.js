@@ -40,6 +40,22 @@
     bell: '옆 건물이 밤마다 한 번 더 일한다'
   };
   for (var dk in DAILY) ST.PIECES[dk].daily = DAILY[dk];
+  // 카드 겉면의 한 줄 요약(날짜 규칙). when은 조건, res는 내는 자원, n은 양. 자세한 글은 꾹 눌러야 나온다.
+  var TAG = {
+    field: { res: 'grain', n: '+1' },
+    orchard: { res: 'gold', n: '+1' },
+    fishing: { when: '물가 옆', res: 'gold', n: '+2' },
+    bakery: { when: '옆 밭마다', res: 'bread', n: '+1' },
+    mill: { when: '같은 줄 밭마다', res: 'grain', n: '+1' },
+    brewery: { when: '옆 과수원마다', res: 'gold', n: '+2' },
+    house: { res: 'people', n: '+1' },
+    inn: { when: '옆 건물 종류마다', res: 'people', n: '+1' },
+    tower: { res: 'people', n: '+3' },
+    well: { when: '옆 밭', res: 'grain', n: '×2' },
+    plaza: { when: '옆 집마다', res: 'people', n: '+1' },
+    bell: { when: '옆 건물', text: '한 번 더' }
+  };
+  for (var tk in TAG) ST.PIECES[tk].tag = TAG[tk];
   ST.PIECE_ORDER = ['field', 'orchard', 'fishing', 'bakery', 'mill', 'brewery', 'house', 'inn', 'tower', 'well', 'plaza', 'bell'];
   ST.DWELL = { house: 1, inn: 1, tower: 1 };
 

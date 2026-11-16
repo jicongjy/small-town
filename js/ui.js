@@ -136,7 +136,7 @@
     });
     if (now < 0) now = ST.QUESTS.length - 1;
     var h = '<div class="row between"><div><h1 class="light">' + ST.TEXT.title + '</h1>' +
-      '<div class="light" style="font-size:12px;opacity:.8">' + esc(save.name) + '의 설계 노트 · 첫 번째 골짜기</div></div>' +
+      '<div class="light" style="font-size:12px;opacity:.8">' + esc(save.name) + '의 첫 번째 골짜기</div></div>' +
       '<button class="small" data-a="dex">도감</button></div>';
     h += '<div class="light mapstat"><span>지은 마을 ' + cleared + ' / ' + ST.QUESTS.length + '</span><span class="row" style="gap:4px">' + img('star', null, null, 'gs') + total + ' / ' + ST.QUESTS.length * 3 + '</span></div>';
 

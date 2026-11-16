@@ -12,7 +12,8 @@
     K: '#2a2433', F: '#f6c9a0', O: '#fdf6e3',
     D: '#b3aca2', d: '#746e66', N: '#f29bb0',
     C: '#f08a4b', c: '#c96a34', E: '#3f8f4f',
-    U: '#9a78d6', u: '#6f52a8', X: '#5b93d6', x: '#3f6ea8'
+    U: '#9a78d6', u: '#6f52a8', X: '#5b93d6', x: '#3f6ea8',
+    A: '#d9b97c', a: '#c49a5e'
   };
 
   // 의뢰별 땅 색. 겨울 의뢰는 눈밭으로 바꾼다.
@@ -56,6 +57,12 @@
     // 이야기 장면용
     note: ['..bbbbbbbbb', '..bPPPPPPPb', '..bPOOOOOPb', '..bPOKKKOPb', '..bPOOOOOPb', '..bPPPPPPPb', '..bPPPPPPPb', '..bPPPHPPPb', '..bPPPPPPPb', '..bbbbbbbbb'],
     crate: ['', '', '', '.BBBBBBBBBB', '.BPPPPPPPPB', '.BbbbbbbbbB', '.BPPPPPPPPB', '.BPPPPPPPPB', '.BbbbbbbbbB', '.BPPPPPPPPB', '.BBBBBBBBBB'],
+
+    // 지도용: 흙길, 다리, 팻말
+    path: ['..AAAAAAAAAAAA', '.AAAAAaAAAAAAAA', '.AAAAAAAAAAaAAA', '..AAAAAAAAAAAAA', '..AAaAAAAAAAAA', '.AAAAAAAAAAAAA', '.AAAAAAAAaAAAAA', '..AAAAAAAAAAAAA', '..AAAAAAAAAAAA', '.AAAaAAAAAAAAAA', '.AAAAAAAAAAAaAA', '..AAAAAAAAAAAA', '..AAAAAAaAAAAAA', '.AAAAAAAAAAAAAA', '.AAAAAAAAAAAAA', '..AAAAAAAAAAAA'],
+    bridge: ['WWWbBBBBBBBBbWWW', 'wwwbPPPPPPPPbwww', 'WWWbBBBBBBBBbWWW', 'WWWbPPPPPPPPbWWW', 'WWWbBBBBBBBBbWWW', 'WWWbPPPPPPPPbWWW', 'WWWbBBBBBBBBbWWW', 'WWWbPPPPPPPPbWWW', 'WWWbBBBBBBBBbWWW', 'WWWbPPPPPPPPbWWW', 'WWWbBBBBBBBBbWWW', 'WWWbPPPPPPPPbWWW', 'WWWbBBBBBBBBbWWW', 'WWWbPPPPPPPPbWWW', 'VVVbBBBBBBBBbVVV', 'VVVbPPPPPPPPbVVV'],
+    sign: ['', '', '', '...bbbbbbbbbb', '...bOOOOOOOOb', '...bOKKOKKKOb', '...bOOOOOOOOb', '...bOKKKOKKOb', '...bOOOOOOOOb', '...bbbbbbbbbb', '.......bb', '.......bb', '.......bb', '......MMMM'],
+    steam: ['..O...O...O', '.O...O...O', '..O...O...O', '...O...O...O', '..O...O...O'],
 
     // 유물
     r_compass: ['....SSSS', '..SSOOOOSS', '.SOOOROOOOS', '.SOOORROOOS', 'SOOOORROOOOS', 'SOOOOKKOOOOS', 'SOOOOssOOOOS', '.SOOOssOOOS', '.SOOOOsOOOS', '..SSOOOOSS', '....SSSS'],

@@ -7,7 +7,7 @@
   var KEY = 'small-town-save-v1' + (slot ? '-' + slot : '');
 
   var save = load();
-  var V = save ? { name: 'map' } : { name: 'start', i: 0 };
+  var V = { name: 'title' };
   var Q = null;        // 지금 하는 의뢰
   var G = null;        // 지금 판의 상태
   var hist = [];       // 되돌리기용 기록
@@ -93,6 +93,27 @@
     return '<div class="row"><button data-a="' + back + '"' + (i ? '' : ' disabled') + '>이전</button>' +
       '<span class="light" style="font-size:12px">' + (i + 1) + ' / ' + total + '</span>' +
       '<button class="primary" style="flex:1" data-a="' + next + '">' + nextLabel + '</button></div>';
+  }
+
+  // 첫 화면. 제목과 마을 그림, 시작 단추만 있다. 이야기는 "시작하기"를 눌러야 나온다.
+  function vTitle() {
+    var T = ST.TITLE, n = T.rows.length, h = '';
+    h += '<div class="t-logo"><div class="t-sub">' + esc(T.tagline) + '</div><h1>할머니의<br>마을 노트</h1></div>';
+    h += '<div class="t-wrap"><div class="t-scene" style="background-image:url(' + ST.ground('day', 3) + ')">';
+    for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) {
+      var sp = T.key[T.rows[r].charAt(c)];
+      if (sp) h += '<span class="vt" style="left:' + (c * 100 / n) + '%;top:' + (r * 100 / n) + '%;width:' + (100 / n) + '%;height:' + (100 / n) + '%">' + img(sp, 'day', 16) + '</span>';
+    }
+    h += '<span class="t-walk" style="top:' + ((T.walk[0] + 0.15) * 100 / n) + '%;width:' + (190 / n) + '%;--a:' + (T.walk[1] * 100 / n) + '%;--b:' + (T.walk[2] * 100 / n) + '%">' +
+      img('donkey') + img('hero') + '</span>';
+    h += '</div></div>';
+    h += '<div class="t-btns">' + (save
+      ? '<button class="primary wide big" data-a="map">이어 하기</button>' +
+        '<div class="light t-save">' + esc(save.name) + '의 노트 · 의뢰 ' + ST.QUESTS.filter(function (q) { return save.stars[q.id]; }).length + ' / ' + ST.QUESTS.length + '</div>' +
+        '<button class="ghost small" data-a="reset">처음부터 다시</button>'
+      : '<button class="primary wide big" data-a="newgame">시작하기</button>' +
+        '<div class="light t-save">설치 없이 바로 시작해요. 진행은 이 기기에 저장돼요.</div>') + '</div>';
+    return h;
   }
 
   function vStart() {
@@ -551,7 +572,8 @@
 
   function render() {
     var h = '';
-    if (V.name === 'start') h = vStart();
+    if (V.name === 'title') h = vTitle();
+    else if (V.name === 'start') h = vStart();
     else if (V.name === 'map') h = vMap();
     else if (V.name === 'intro') h = vIntro();
     else if (V.name === 'pack') h = vPack();
@@ -674,12 +696,13 @@
       startTut();
     },
     pronext: function () { V.i = Math.min(V.i + 1, ST.TEXT.prologue.length - 1); render(); window.scrollTo(0, 0); },
-    proback: function () { V.i = Math.max(V.i - 1, 0); render(); },
+    proback: function () { if (V.i === 0) go('title'); else { V.i--; render(); } },
     proskip: function () { V.i = ST.TEXT.prologue.length - 1; render(); },
     intronext: function () { V.i++; render(); window.scrollTo(0, 0); },
     introback: function () { V.i = Math.max(V.i - 1, 0); render(); },
     introskip: function () { V.i = introCuts(Q).length; render(); },
     story: function () { V.i = 0; render(); },
+    newgame: function () { go('start', { i: 0 }); },
     tutorial: function () { startTut(); },
     tutskip: function () {
       if (!window.confirm('튜토리얼을 건너뛸까요? 선물(집 조각)은 그대로 받아요.')) return;

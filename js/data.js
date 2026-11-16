@@ -241,6 +241,23 @@
     }
   };
 
+  // 첫 화면(게임 시작 화면)의 마을 그림. 가로세로 7칸.
+  // T 나무, p 소나무, ~ 강, . 풀밭, 그 밖의 글자는 아래 key의 건물. walk는 손주와 두부가 걷는 줄과 칸 범위.
+  ST.TITLE = {
+    rows: [
+      'TpTTpTT',
+      'pfwfooT',
+      'Tmb.hhT',
+      '~~~~~~~',
+      'TghPi.T',
+      'p...BtT',
+      'TTpTTpT'
+    ],
+    key: { T: 'tree', p: 'pine', '~': 'water', f: 'field', w: 'well', o: 'orchard', m: 'mill', b: 'bakery', h: 'house', g: 'fishing', P: 'plaza', i: 'inn', B: 'bell', t: 'tower' },
+    walk: [5, 1, 2.1],
+    tagline: '빈 땅에 조각을 놓아 마을을 짓는 퍼즐'
+  };
+
   ST.TEXT = {
     title: '할머니의 마을 노트',
     // 처음 시작할 때 한 컷씩 넘겨 보는 이야기. imgs는 인물 그림, pieces는 조각 그림.

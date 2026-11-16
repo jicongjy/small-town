@@ -107,16 +107,56 @@
     return h;
   }
 
+  // 지도. 골짜기 길을 따라 의뢰인의 땅이 놓여 있고, 의뢰를 끝낸 땅에는 내가 지은 마을이 그대로 보인다.
+  var MAP_POS = [[27, 85], [71, 68], [29, 51], [71, 34], [31, 16]];   // 땅의 자리(가로 %, 세로 %). 아래에서 위로 올라간다
+  var MAP_DECO = [['tree', 8, 62], ['pine', 90, 88], ['rock', 52, 92], ['pine', 92, 50], ['tree', 50, 26], ['pine', 8, 34], ['rock', 88, 12], ['tree', 60, 8]];
+  var TOWN_FALLBACK = ['house', 'field', 'bakery', 'well', 'house'];   // 예전 저장에는 지은 모습이 없어서 대신 보여 줄 것
+
+  function townOf(q) {
+    if (save.towns && save.towns[q.id]) return save.towns[q.id];
+    var t = [], k = 0;
+    [6, 8, 11, 13, 17].forEach(function (c) { if (!(q.terrain || {})[c]) t[c] = TOWN_FALLBACK[k++]; });
+    return t;
+  }
+  function miniBoard(q, town) {
+    var h = '<span class="mini" style="background-image:url(' + ST.ground(q.ground, q.id.charCodeAt(1)) + ')">';
+    for (var i = 0; i < 25; i++) {
+      var t = (q.terrain || {})[i];
+      h += t ? img(terrainSprite(t, i), q.ground, 16) : (town && town[i] ? img(town[i], q.ground, 16) : '<i></i>');
+    }
+    return h + '</span>';
+  }
+
   function vMap() {
+    var total = 0, cleared = 0, now = -1;
+    ST.QUESTS.forEach(function (q, i) {
+      var st = save.stars[q.id] || 0;
+      total += st; if (st) cleared++;
+      if (now < 0 && !st) now = i;
+    });
+    if (now < 0) now = ST.QUESTS.length - 1;
     var h = '<div class="row between"><div><h1 class="light">' + ST.TEXT.title + '</h1>' +
       '<div class="light" style="font-size:12px;opacity:.8">' + esc(save.name) + '의 설계 노트 · 첫 번째 골짜기</div></div>' +
-      '<button class="small" data-a="dex">도감</button></div><div class="gap"></div>';
+      '<button class="small" data-a="dex">도감</button></div>';
+    h += '<div class="light mapstat"><span>지은 마을 ' + cleared + ' / ' + ST.QUESTS.length + '</span><span class="row" style="gap:4px">' + img('star', null, null, 'gs') + total + ' / ' + ST.QUESTS.length * 3 + '</span></div>';
+
+    h += '<div class="valley" style="background-image:url(' + ST.ground('day', 5) + ')">';
+    var pts = MAP_POS.map(function (p) { return p[0] + ',' + p[1]; });
+    h += '<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' +
+      '<polyline class="road" points="' + pts.join(' ') + '"/>' +
+      '<polyline class="road walked" points="' + pts.slice(0, now + 1).join(' ') + (now === 0 ? ' ' + pts[0] : '') + '"/></svg>';
+    MAP_DECO.forEach(function (d) { h += '<span class="deco" style="left:' + d[1] + '%;top:' + d[2] + '%">' + img(d[0], 'day', 16) + '</span>'; });
     ST.QUESTS.forEach(function (q, i) {
-      var open = unlocked(i);
-      h += '<button class="quest' + (open ? '' : ' locked') + '" ' + (open ? 'data-a="intro" data-q="' + q.id + '"' : 'disabled') + '>' +
-        portrait(q) + '<span style="flex:1"><span class="who">' + (i + 1) + '번째 의뢰 · ' + esc(q.who) + '</span><br>' +
-        (open ? esc(q.title) : '앞의 의뢰를 먼저 끝내야 한다') + '</span>' + starsHtml(save.stars[q.id] || 0) + '</button>';
+      var st = save.stars[q.id] || 0, open = unlocked(i), state = st ? 'done' : (open ? 'open' : 'lock');
+      h += '<button class="node ' + state + '" style="left:' + MAP_POS[i][0] + '%;top:' + MAP_POS[i][1] + '%" ' +
+        (open ? 'data-a="intro" data-q="' + q.id + '"' : 'disabled') +
+        ' aria-label="' + (i + 1) + '번째 의뢰 ' + (open ? esc(q.who) + ' ' + esc(q.title) : '앞의 의뢰를 먼저 끝내야 한다') + '">' +
+        miniBoard(q, st ? townOf(q) : null) +
+        (i === now ? '<span class="me">' + img('hero') + img('donkey') + '</span>' : '') +
+        '<span class="plate"><span><b>' + (i + 1) + '</b> ' + (open ? esc(q.who) : '? ? ?') + '</span>' +
+        (st ? starsHtml(st) : (open ? '<em>빈 땅 · 새 의뢰</em>' : '')) + '</span></button>';
     });
+    h += '</div>';
     h += '<div class="center">' + (save.ended ? '<button class="ghost small" data-a="ending">노트 맨 뒷장</button>' : '') +
       '<button class="ghost small" data-a="reset">처음부터 다시 하기</button></div>';
     return h;
@@ -521,6 +561,11 @@
       r.first = prev === 0;
       var newStars = Math.max(0, ev.stars - prev);
       save.stars[Q.id] = Math.max(prev, ev.stars);
+      // 지도에 보여 줄 마을 모습. 별을 같거나 더 많이 받은 판으로 바꾼다
+      if (ev.stars >= prev) {
+        save.towns = save.towns || {};
+        save.towns[Q.id] = G.board.map(function (c) { return c && c.k === 'b' ? c.id : 0; });
+      }
       var picked = save.picks[Q.id] || (save.picks[Q.id] = []);
       Q.rewards.forEach(function (_, i) { if (picked.indexOf(i) < 0) r.left.push(i); });
       r.toPick = Math.min(newStars, r.left.length);

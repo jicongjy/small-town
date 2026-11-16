@@ -339,7 +339,7 @@ img.scnp { width: 56px; height: 56px; background: #2f9e7f; border: 2px solid var
 .dots { display: flex; justify-content: center; gap: 6px; margin-top: auto !important; }
 .dots i { width: 8px; height: 8px; background: rgba(255, 255, 255, 0.3); }
 .dots i.on { background: #ffe07a; }
-.lead { font-size: 15px; margin-top: auto !important; }
+.lead { font-size: 15px; margin-top: 4px !important; }
 .banner { text-align: center; padding: 10px 0 2px; }
 .banner .sm { font-size: 12px; opacity: 0.8; }
 .banner h1 { font-size: 28px; }
@@ -472,3 +472,70 @@ button.big { min-height: 54px; font-size: 18px; }
 .t-save { font-size: 12px; opacity: 0.85; margin: 8px 0 2px; }
 @media (max-height: 600px) { .t-logo h1 { font-size: 34px; } #app.v-title { padding-top: 12px; gap: 8px; } }
 @media (prefers-reduced-motion: reduce) { .t-logo, .t-scene, .t-walk, .t-walk img, .t-btns, .t-btns .primary { animation: none; } }
+
+/* 이야기 쪽과 상자들은 글 길이와 상관없이 화면 높이를 채운다. 아래 단추는 늘 같은 자리에 온다 */
+#app.v-start, #app.v-intro, #app.v-ending, #app.v-pack {
+  min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; gap: 10px;
+}
+.v-start > *, .v-intro > *, .v-ending > *, .v-pack > * { flex: none; margin-bottom: 0; }
+.v-start > .gap, .v-intro > .gap { display: none; }
+.v-start > .scene, .v-intro > .scene, .v-intro > .qcard, .v-intro > .panel:first-of-type, .v-ending > .scene, .v-pack > .pk,
+.v-result > .pcard, .v-result > .notebook, .v-result > .giftbox { flex: 1 0 auto; }
+.v-start .scene p, .v-intro .scene p, .v-ending .scene p { font-size: 16px; }
+.v-start img.scn, .v-intro img.scn { width: 112px; }
+.v-start img.scnp { width: 64px; height: 64px; }
+.v-intro .scene .portrait img { width: 96px; }
+.v-intro .scene .portrait.two img { width: 72px; }
+.qcard { display: flex; flex-direction: column; align-items: center; }
+.qcard > * { flex: none; }
+.qcard .qc-stage { flex: 1 0 150px; height: auto; align-self: stretch; }
+.qcard .qc-note { align-self: stretch; }
+.qc-title { margin-bottom: 12px; }
+.pcard { display: flex; flex-direction: column; }
+.pcard .pc-pic { flex: 1 0 96px; height: auto; }
+.pcard .pc-pic .tub img { width: 72px; }
+.pcard .pc-pic img.st { width: 150px; top: auto; bottom: 62px; }
+.giftbox { display: flex; flex-direction: column; justify-content: center; }
+.v-pack > .pk { display: flex; flex-direction: column; }
+
+.scene .art.small { margin-top: -6px; }
+.scene .art.small img.scn { width: 56px; }
+.prev p { font-size: 13px; margin-bottom: 6px; }
+.starrule { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 4px 0 6px; }
+.starrule span { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 2px; background: var(--paper-2); border: 2px solid var(--line); padding: 4px 2px; font-size: 11px; color: var(--ink-2); }
+.starrule img { width: 11px; height: 12px; }
+.starrule b { flex-basis: 100%; text-align: center; font-weight: 400; font-size: 13px; color: var(--ink); }
+
+/* 짐 싸기: 두부 등의 칸과 가진 조각 */
+.pk .over { color: var(--accent); }
+.slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.slot {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-height: 62px; padding: 3px 2px; position: relative;
+  border: 2px dashed #b9a98a; background: var(--paper-2); color: #a8987a; font-size: 11px; line-height: 1.2; box-shadow: none;
+}
+.slot.full { border: 2px solid var(--line); background: #fff3c4; color: var(--ink); box-shadow: 0 3px 0 var(--line); }
+.slot img { width: 34px; height: 34px; background: #2f9e7f; }
+.slot.over { background: #fbd9d5; border-color: var(--accent); }
+.slot.lend { background: #e6f1fb; border-color: #3f6ea8; box-shadow: none; }
+.slot em, .own em { position: absolute; top: -2px; right: -2px; font-style: normal; font-size: 9px; background: #3f6ea8; color: #fff; padding: 0 3px; line-height: 1.5; }
+.owned { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; margin-top: 6px; }
+.own { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 3px 1px; min-height: 0; font-size: 10px; line-height: 1.2; position: relative; background: #fff; box-shadow: 0 2px 0 var(--line); }
+.own img { width: 30px; height: 30px; background: #2f9e7f; }
+.own.in { opacity: 0.45; box-shadow: none; }
+.own em { background: var(--ink-2); }
+.v-pack h2 small { font-size: 12px; }
+
+.slots { grid-template-columns: repeat(5, 1fr); gap: 5px; }
+.slot { min-height: 50px; font-size: 10px; padding: 2px 1px; }
+.slot img { width: 28px; height: 28px; }
+.owned { grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 4px; }
+.own { padding: 2px 0; }
+.own img { width: 26px; height: 26px; }
+.own span { white-space: nowrap; }
+.v-pack .panel { padding: 8px 10px; }
+.v-pack .pk .pinfo { min-height: 34px; margin: 0 0 4px; }
+.v-pack .rchips { gap: 4px; margin-top: 4px; }
+.v-pack .rchip { font-size: 11px; padding: 2px 5px; min-height: 28px; }
+.v-pack .rchip img { width: 14px; height: 14px; }
+.v-pack .pk > p.muted { margin: 2px 0 0; font-size: 11px; }
+#app.v-pack { gap: 8px; padding-top: 8px; }

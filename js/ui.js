@@ -207,13 +207,19 @@
       if (c.kind === 'road') {
         h += '<div class="panel scene"><div class="tag">길 위에서</div>' + cutArt({ imgs: ['hero', 'donkey'] }) + '<p>' + esc(c.text) + '</p></div>';
       } else if (c.kind === 'card') {
-        h += '<div class="panel scene"><div class="tag">의뢰인</div><div class="art">' + portrait(q) + '</div>' +
-          '<h2>' + esc(q.who) + '</h2><p>' + esc(q.bio) + '</p>' +
-          '<div class="memo" style="margin:10px 0 0;text-align:left"><b>할머니의 노트</b>' + esc(q.note) + '</div></div>';
+        // 의뢰인 등장. 길 위의 이야기와 달리 "의뢰가 시작된다"는 것이 보이도록 따로 꾸민다
+        var qn = ST.QUESTS.indexOf(q) + 1;
+        h += '<div class="qcard"><div class="qc-no">의뢰 ' + qn + ' / ' + ST.QUESTS.length + '</div>' +
+          '<h1 class="qc-title">' + esc(q.title) + '</h1>' +
+          '<div class="qc-stage" style="background-image:url(' + ST.ground(q.ground, q.id.charCodeAt(1)) + ')">' +
+          '<span class="qc-ray"></span><span class="qc-who' + (q.portraits.length > 1 ? ' two' : '') + '">' + q.portraits.map(function (pt) { return img(pt); }).join('') + '</span></div>' +
+          '<div class="qc-name"><small>의뢰인</small>' + esc(q.who) + '</div>' +
+          '<p class="qc-bio">' + esc(q.bio) + '</p>' +
+          '<div class="qc-note"><b>할머니의 노트</b>' + esc(q.note) + '</div></div>';
       } else {
         h += '<div class="panel scene"><div class="tag">' + esc(q.who) + '</div><div class="art">' + portrait(q) + '</div><p>' + esc(c.text) + '</p></div>';
       }
-      h += cutNav(i, cuts.length, 'introback', 'intronext', i === cuts.length - 1 ? '의뢰 조건 보기' : '다음');
+      h += cutNav(i, cuts.length, 'introback', 'intronext', i === cuts.length - 1 ? '의뢰 조건 보기' : (c.kind === 'card' ? '의뢰 듣기' : '다음'));
       return h;
     }
     h += '<div class="panel"><div class="row" style="gap:12px">' + portrait(q) +
